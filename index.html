@@ -140,11 +140,11 @@ footer{margin-top:20px;font-family:var(--mono);font-size:11px;color:#9a9280;text
       <input type="file" id="fileMaster" accept=".xlsx,.xls,.csv">
 
       <label class="dropzone" id="dzHist" for="fileHist">
-        <div class="lbl">🧾 Histori Visit (CSV)</div>
+        <div class="lbl">🧾 Histori Visit (CSV/Excel)</div>
         <div class="hint">File "reporthistall" — kolom Store Name, Date, Is Call, Vol. Act</div>
         <div class="status" id="statusHist"></div>
       </label>
-      <input type="file" id="fileHist" accept=".csv">
+      <input type="file" id="fileHist" accept=".csv,.xlsx,.xls">
     </div>
   </div>
 
@@ -491,35 +491,49 @@ function processMasterRows(rows){
 document.getElementById('fileHist').addEventListener('change', function(e){
   const f = e.target.files[0];
   if(!f) return;
-  Papa.parse(f, {
-    header:true,
-    skipEmptyLines:true,
-    complete: function(results){
-      const data = results.data;
-      visitMap = {};
-      let minD=null, maxD=null;
-      data.forEach(row=>{
-        const storeName = row['Store Name'];
-        const isCall = String(row['Is Call']||'').trim();
-        if(!storeName) return;
-        const key = normName(storeName);
-        const d = parseDMY((row['Date']||'').trim());
-        if(d){ if(!minD||d<minD) minD=d; if(!maxD||d>maxD) maxD=d; }
-        if(isCall !== '1') return; // hanya hitung visit valid (Is Call = 1)
-        if(!visitMap[key]) visitMap[key] = {count:0, omzet:0, lastDate:null};
-        visitMap[key].count += 1;
-        visitMap[key].omzet += parseNum(row['Vol. Act']);
-        if(d && (!visitMap[key].lastDate || d>visitMap[key].lastDate)) visitMap[key].lastDate = d;
-      });
-      periodInfo = (minD&&maxD) ? `${fmtDMY(minD)} s/d ${fmtDMY(maxD)}` : '';
-      document.getElementById('periodBadge').textContent = 'PERIODE: ' + (periodInfo||'—');
-      document.getElementById('statusHist').textContent = `✓ ${data.length} baris histori termuat`;
-      document.getElementById('dzHist').classList.add('done');
-      tryRender();
-      if(masterData) saveToCloud();
-    }
-  });
+  const ext = f.name.split('.').pop().toLowerCase();
+  if(ext === 'xlsx' || ext === 'xls'){
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      processHistRows(rows);
+    };
+    reader.readAsArrayBuffer(f);
+  } else {
+    Papa.parse(f, {
+      header:true,
+      skipEmptyLines:true,
+      complete: (res)=> processHistRows(res.data)
+    });
+  }
 });
+
+function processHistRows(data){
+  if(!data || !data.length){ alert('File histori visit kosong atau tidak terbaca.'); return; }
+  visitMap = {};
+  let minD=null, maxD=null;
+  data.forEach(row=>{
+    const storeName = row['Store Name'];
+    const isCall = String(row['Is Call']||'').trim();
+    if(!storeName) return;
+    const key = normName(storeName);
+    const d = parseDMY(String(row['Date']||'').trim());
+    if(d){ if(!minD||d<minD) minD=d; if(!maxD||d>maxD) maxD=d; }
+    if(isCall !== '1') return; // hanya hitung visit valid (Is Call = 1)
+    if(!visitMap[key]) visitMap[key] = {count:0, omzet:0, lastDate:null};
+    visitMap[key].count += 1;
+    visitMap[key].omzet += parseNum(row['Vol. Act']);
+    if(d && (!visitMap[key].lastDate || d>visitMap[key].lastDate)) visitMap[key].lastDate = d;
+  });
+  periodInfo = (minD&&maxD) ? `${fmtDMY(minD)} s/d ${fmtDMY(maxD)}` : '';
+  document.getElementById('periodBadge').textContent = 'PERIODE: ' + (periodInfo||'—');
+  document.getElementById('statusHist').textContent = `✓ ${data.length} baris histori termuat`;
+  document.getElementById('dzHist').classList.add('done');
+  tryRender();
+  if(masterData) saveToCloud();
+}
 
 function tryRender(){
   if(!masterData || !masterData.length) return;
