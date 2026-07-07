@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Monitoring NOO — Visit & Omzet</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --ink:#1b2430; --paper:#f5f3ee; --card:#ffffff;
+  --line:#dfd9cb; --accent:#0f5d52; --accent2:#c9622a;
+  --red:#b0392f; --amber:#c98a1a; --green:#1c7a4d;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --sans:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 24px 60px;}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;border-bottom:3px solid var(--ink);padding-bottom:16px;margin-bottom:22px;}
+header.top h1{font-size:26px;margin:0;letter-spacing:-0.02em;font-weight:700;}
+header.top .sub{font-family:var(--mono);font-size:12px;color:#5a5346;margin-top:4px;}
+.periodbadge{font-family:var(--mono);font-size:12px;background:var(--ink);color:var(--paper);padding:6px 12px;border-radius:3px;}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin-bottom:18px;}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;color:#5a5346;font-weight:600;}
+
+.uploadgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dropzone{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:.15s;background:#fbfaf7;}
+.dropzone:hover{border-color:var(--accent);background:#f0f5f3;}
+.dropzone.done{border-color:var(--green);background:#eef7f1;}
+.dropzone .lbl{font-weight:600;font-size:14px;margin-bottom:4px;}
+.dropzone .hint{font-family:var(--mono);font-size:11px;color:#847c6a;}
+.dropzone .status{font-family:var(--mono);font-size:12px;margin-top:6px;color:var(--green);font-weight:600;}
+input[type=file]{display:none;}
+
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;position:relative;overflow:hidden;}
+.card .num{font-family:var(--mono);font-size:30px;font-weight:600;line-height:1;}
+.card .lbl{font-size:12px;color:#5a5346;margin-top:6px;text-transform:uppercase;letter-spacing:.05em;}
+.card.belum{border-left:4px solid var(--red);}
+.card.visit{border-left:4px solid var(--amber);}
+.card.omzet{border-left:4px solid var(--green);}
+.card.total{border-left:4px solid var(--ink);}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+select,input[type=text]{font-family:var(--sans);font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink);}
+input[type=text]{min-width:220px;}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 14px;border-radius:5px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;}
+.btn.ghost{background:#fff;color:var(--ink);}
+.btn:hover{opacity:.85;}
+.spacer{flex:1;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{position:sticky;top:0;background:var(--ink);color:#fff;text-align:left;padding:9px 10px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+tbody tr:hover{background:#f7f4ec;}
+.tablewrap{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:8px;}
+.status-pill{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;display:inline-block;white-space:nowrap;}
+.st-belum{background:#f6dedb;color:var(--red);}
+.st-visit{background:#f5e6c6;color:var(--amber);}
+.st-omzet{background:#d9efdf;color:var(--green);}
+td.num{font-family:var(--mono);text-align:right;}
+.namecell{font-weight:600;}
+.maps-link{color:var(--accent);text-decoration:none;}
+.maps-link:hover{text-decoration:underline;}
+.subtext{color:#847c6a;font-size:11.5px;}
+.empty{padding:60px 20px;text-align:center;color:#847c6a;font-family:var(--mono);font-size:13px;}
+footer{margin-top:20px;font-family:var(--mono);font-size:11px;color:#9a9280;text-align:center;}
+@media print{
+  .panel.uploadpanel,.controls,.btn{display:none!important;}
+  body{background:#fff;}
+}
+
+.landing{position:fixed;inset:0;background:var(--paper);display:flex;align-items:center;justify-content:center;z-index:100;}
+.landing-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:36px 40px;max-width:480px;width:90%;text-align:center;}
+.landing-box h1{font-size:22px;margin:0 0 4px;}
+.landing-box .sub{color:#5a5346;font-size:13px;margin:0 0 20px;font-family:var(--mono);}
+.cabang-list{display:flex;flex-direction:column;gap:8px;}
+.cabang-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:6px;background:#fbfaf7;cursor:pointer;text-align:left;transition:.15s;}
+.cabang-item:hover{border-color:var(--accent);background:#f0f5f3;}
+.cabang-item .cname{font-weight:600;font-size:14px;}
+.cabang-item .carea{font-family:var(--mono);font-size:11.5px;color:#847c6a;}
+#pwInput{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font-size:14px;text-align:center;}
+.btn-del{background:none;border:1px solid var(--line);border-radius:5px;color:var(--red);cursor:pointer;font-size:13px;width:26px;height:26px;line-height:1;}
+.btn-del:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.undo-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 16px;border-radius:8px;display:flex;align-items:center;gap:14px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:200;}
+.undo-toast .btn.ghost{background:transparent;border-color:#fff;color:#fff;padding:5px 12px;font-size:12px;}
+.undo-toast .btn.ghost:hover{background:#fff;color:var(--ink);}
+</style>
+</head>
+<body>
+<div id="landingScreen" class="landing">
+  <div class="landing-box">
+    <h1>Monitoring NOO</h1>
+    <p class="sub">Pilih cabang untuk masuk</p>
+    <div id="cabangList" class="cabang-list"></div>
+  </div>
+</div>
+<div id="passwordScreen" class="landing" style="display:none;">
+  <div class="landing-box">
+    <h1 id="pwCabangLabel">Cabang</h1>
+    <p class="sub">Masukkan password</p>
+    <input type="password" id="pwInput" placeholder="Password">
+    <div class="controls" style="justify-content:center;margin-top:12px;">
+      <button class="btn ghost" id="btnPwBack">Kembali</button>
+      <button class="btn" id="btnPwEnter">Masuk</button>
+    </div>
+    <div class="subtext" id="pwError" style="color:var(--red);margin-top:8px;"></div>
+  </div>
+</div>
+<div class="wrap" id="mainWrap" style="display:none;">
+  <header class="top">
+    <div>
+      <h1>Monitoring NOO — Visit &amp; Omzet</h1>
+      <div class="sub" id="headerSub">Master pelanggan vs. histori visit salesman — BCP Makassar</div>
+    </div>
+    <div class="periodbadge" id="periodBadge">PERIODE: —</div>
+  </header>
+
+  <div class="panel" id="syncPanel">
+    <h2>Status Cloud Sync</h2>
+    <div class="controls">
+      <span class="subtext" id="syncStatus">Menghubungkan ke Firestore...</span>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnReload" style="display:none;">Muat Ulang dari Cloud</button>
+    </div>
+  </div>
+
+  <div class="panel uploadpanel">
+    <h2>1. Import Data (upload otomatis tersimpan ke cloud)</h2>
+    <div class="uploadgrid">
+      <label class="dropzone" id="dzMaster" for="fileMaster">
+        <div class="lbl">📋 Master Pelanggan (Excel)</div>
+        <div class="hint">File "Laporan Pelanggan Semua" — kolom Perusahaan, NamaSR, VisitDay, dst</div>
+        <div class="status" id="statusMaster"></div>
+      </label>
+      <input type="file" id="fileMaster" accept=".xlsx,.xls,.csv">
+
+      <label class="dropzone" id="dzHist" for="fileHist">
+        <div class="lbl">🧾 Histori Visit (CSV)</div>
+        <div class="hint">File "reporthistall" — kolom Store Name, Date, Is Call, Vol. Act</div>
+        <div class="status" id="statusHist"></div>
+      </label>
+      <input type="file" id="fileHist" accept=".csv">
+    </div>
+  </div>
+
+  <div id="dashboardArea" style="display:none;">
+    <div class="cards">
+      <div class="card total"><div class="num" id="cTotal">0</div><div class="lbl">Total Coverage</div></div>
+      <div class="card belum"><div class="num" id="cBelum">0</div><div class="lbl">Belum Divisit</div></div>
+      <div class="card visit"><div class="num" id="cVisit">0</div><div class="lbl">Divisit, Belum Omzet</div></div>
+      <div class="card omzet"><div class="num" id="cOmzet">0</div><div class="lbl">Sudah Ada Omzet</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>2. Filter &amp; Aksi</h2>
+      <div class="controls">
+        <select id="fSales"><option value="">Semua Sales</option></select>
+        <select id="fStatus">
+          <option value="">Semua Status</option>
+          <option value="belum">Belum Divisit</option>
+          <option value="visit">Divisit, Belum Omzet</option>
+          <option value="omzet">Sudah Ada Omzet</option>
+        </select>
+        <input type="text" id="fSearch" placeholder="Cari nama toko...">
+        <div class="spacer"></div>
+        <button class="btn ghost" id="btnExportXlsx">Export Excel</button>
+        <button class="btn" id="btnPrint">Export PDF</button>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px;">No</th>
+              <th>Nama Toko</th>
+              <th>Alamat</th>
+              <th>Sales</th>
+              <th>Visit Day</th>
+              <th style="text-align:right;">Jml Visit</th>
+              <th>Tgl Visit Terakhir</th>
+              <th style="text-align:right;">Total Omzet (Vol. Act)</th>
+              <th>Status</th>
+              <th style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="archivePanel" style="display:none;">
+    <h2>Toko Dihapus / Diarsip</h2>
+    <div class="controls">
+      <span class="subtext" id="archiveCount"></span>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnExportArchive">Export Arsip (Excel)</button>
+    </div>
+    <div class="tablewrap" style="max-height:320px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34px;">No</th>
+            <th>Nama Toko</th>
+            <th>Alamat</th>
+            <th>Sales</th>
+            <th>Tgl Dihapus</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody id="archiveBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty" id="emptyMsg">Upload kedua file di atas untuk mulai monitoring.</div>
+  <footer>Matching toko dilakukan berdasarkan Nama Toko (case-insensitive), bukan kode — kode di master &amp; histori pakai format berbeda.</footer>
+</div>
+
+<div id="undoToast" class="undo-toast" style="display:none;">
+  <span id="undoToastMsg"></span>
+  <button id="undoToastBtn" class="btn ghost">Undo</button>
+</div>
+
+<script>
+// ---------- Cabang list & gate ----------
+const CABANG_LIST = [
+  {nama:'Irfan', area:'Makassar & Bulukumba', key:'irfan_makassar_bulukumba'},
+  {nama:'Amri', area:'Bone', key:'amri_bone'},
+  {nama:'Dandy', area:'Parepare', key:'dandy_parepare'},
+  {nama:'Zul', area:'Palopo', key:'zul_palopo'},
+  {nama:'Yusuf', area:'Palu', key:'yusuf_palu'},
+  {nama:'Miswar', area:'Poso', key:'miswar_poso'},
+  {nama:'Teddy', area:'Gorontalo', key:'teddy_gorontalo'},
+  {nama:'Irfan', area:'Kotamobagu', key:'irfan_kotamobagu'},
+  {nama:'Nando', area:'Manado', key:'nando_manado'},
+  {nama:'Paul', area:'Manado', key:'paul_manado'}
+];
+const GATE_PASSWORD = '1';
+let activeCabangKey = null;
+
+function renderCabangList(){
+  const el = document.getElementById('cabangList');
+  el.innerHTML = CABANG_LIST.map(c => `
+    <button class="cabang-item" data-key="${c.key}">
+      <span class="cname">${c.nama}</span>
+      <span class="carea">${c.area}</span>
+    </button>`).join('');
+  el.querySelectorAll('.cabang-item').forEach(btn=>{
+    btn.addEventListener('click', ()=> openPasswordScreen(btn.dataset.key));
+  });
+}
+
+function openPasswordScreen(key){
+  activeCabangKey = key;
+  const c = CABANG_LIST.find(c=>c.key===key);
+  document.getElementById('pwCabangLabel').textContent = `${c.nama} — ${c.area}`;
+  document.getElementById('pwError').textContent = '';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('passwordScreen').style.display = 'flex';
+  document.getElementById('pwInput').focus();
+}
+
+function enterDashboard(){
+  document.getElementById('passwordScreen').style.display = 'none';
+  document.getElementById('mainWrap').style.display = 'block';
+  const c = CABANG_LIST.find(c=>c.key===activeCabangKey);
+  document.getElementById('headerSub').textContent = `Master pelanggan vs. histori visit salesman — ${c.nama} (${c.area})`;
+  DOC_REF = db.collection('monitoring_noo').doc(activeCabangKey);
+  loadFromCloud();
+}
+
+document.getElementById('btnPwEnter').addEventListener('click', ()=>{
+  const val = document.getElementById('pwInput').value;
+  if(val === GATE_PASSWORD){
+    enterDashboard();
+  } else {
+    document.getElementById('pwError').textContent = 'Password salah.';
+  }
+});
+document.getElementById('pwInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('btnPwEnter').click();
+});
+document.getElementById('btnPwBack').addEventListener('click', ()=>{
+  document.getElementById('passwordScreen').style.display = 'none';
+  document.getElementById('landingScreen').style.display = 'flex';
+});
+
+renderCabangList();
+
+// ---------- Firebase / Firestore setup ----------
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",
+  authDomain: "mds-sulawesi.firebaseapp.com",
+  projectId: "mds-sulawesi",
+  storageBucket: "mds-sulawesi.firebasestorage.app",
+  messagingSenderId: "511949021685",
+  appId: "1:511949021685:web:bc32007af0555449e7c0bc"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+let DOC_REF = null; // set once a cabang is chosen
+
+function setSyncStatus(msg){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = msg;
+}
+
+async function saveToCloud(){
+  try{
+    setSyncStatus('Menyimpan ke cloud...');
+    // serialize Date objects to ISO strings so Firestore doesn't turn them into Timestamps
+    const visitMapSerialized = {};
+    Object.keys(visitMap || {}).forEach(k=>{
+      const v = visitMap[k];
+      visitMapSerialized[k] = {
+        count: v.count,
+        omzet: v.omzet,
+        lastDate: v.lastDate ? v.lastDate.toISOString() : null
+      };
+    });
+    await DOC_REF.set({
+      masterData: masterData || [],
+      visitMap: visitMapSerialized,
+      deletedData: deletedData || [],
+      periodInfo: periodInfo || '',
+      updatedAt: new Date().toISOString()
+    });
+    setSyncStatus('✓ Tersimpan di cloud — ' + new Date().toLocaleString('id-ID'));
+  }catch(err){
+    console.error(err);
+    setSyncStatus('⚠ Gagal simpan ke cloud: ' + err.message);
+  }
+}
+
+async function loadFromCloud(){
+  try{
+    setSyncStatus('Memuat data dari cloud...');
+    const snap = await DOC_REF.get();
+    if(!snap.exists){
+      setSyncStatus('Belum ada data tersimpan di cloud — upload file untuk mulai.');
+      return;
+    }
+    const data = snap.data();
+    masterData = data.masterData || [];
+    visitMap = data.visitMap || {};
+    deletedData = data.deletedData || [];
+    // re-inflate lastDate back into Date objects (handles ISO strings and legacy Firestore Timestamps)
+    Object.keys(visitMap).forEach(k=>{
+      const ld = visitMap[k].lastDate;
+      if(!ld){ visitMap[k].lastDate = null; return; }
+      if(typeof ld.toDate === 'function'){
+        visitMap[k].lastDate = ld.toDate(); // legacy Firestore Timestamp
+      } else {
+        const d = new Date(ld);
+        visitMap[k].lastDate = isNaN(d.getTime()) ? null : d;
+      }
+    });
+    periodInfo = data.periodInfo || '';
+    document.getElementById('periodBadge').textContent = 'PERIODE: ' + (periodInfo||'—');
+    if(masterData.length){
+      document.getElementById('statusMaster').textContent = `✓ ${masterData.length} pelanggan (dari cloud)`;
+      document.getElementById('dzMaster').classList.add('done');
+    }
+    if(Object.keys(visitMap).length){
+      document.getElementById('statusHist').textContent = `✓ histori termuat (dari cloud)`;
+      document.getElementById('dzHist').classList.add('done');
+    }
+    setSyncStatus('✓ Data dimuat dari cloud — update terakhir ' + (data.updatedAt ? new Date(data.updatedAt).toLocaleString('id-ID') : '-'));
+    document.getElementById('btnReload').style.display = 'inline-block';
+    tryRender();
+  }catch(err){
+    console.error(err);
+    setSyncStatus('⚠ Gagal memuat dari cloud: ' + err.message);
+  }
+}
+
+document.getElementById('btnReload').addEventListener('click', loadFromCloud);
+
+let masterData = null; // array of {no, kodeCust, nama, alamat, cabang, kodeSales, namaSales, visitDay, key}
+let deletedData = []; // toko yang dihapus, tetap tersimpan/diarsip
+let visitMap = {};   // key(nama upper) -> {count, omzet, lastDate}
+let periodInfo = "";
+
+function normName(s){
+  return (s||"").toString().trim().toUpperCase().replace(/\s+/g,' ');
+}
+function parseNum(v){
+  if(v===undefined||v===null||v==='') return 0;
+  const n = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(n)?0:n;
+}
+function fmtRupiah(n){
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+function gmapsLink(nama, alamat){
+  const q = encodeURIComponent(`${nama} ${alamat||''}`.trim());
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+function parseDMY(s){
+  // format DD-MM-YYYY
+  const p = s.split('-');
+  if(p.length!==3) return null;
+  return new Date(+p[2], +p[1]-1, +p[0]);
+}
+function fmtDMY(d){
+  if(!d || isNaN(d.getTime())) return '-';
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+document.getElementById('fileMaster').addEventListener('change', function(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  const ext = f.name.split('.').pop().toLowerCase();
+  if(ext === 'csv'){
+    Papa.parse(f, {
+      header:true,
+      skipEmptyLines:true,
+      complete: (res)=> processMasterRows(res.data)
+    });
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      let rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      // fallback for legacy files where the real header isn't on row 1
+      if(!rows.length || !Object.keys(rows[0]).some(k=>k.trim()==='Perusahaan' || k.trim()==='Nama Perusahaan')){
+        const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        let headerIdx = -1;
+        for(let i=0;i<raw.length;i++){
+          if(raw[i].some(c => ['Perusahaan','Nama Perusahaan'].includes(String(c).trim()))){ headerIdx = i; break; }
+        }
+        if(headerIdx>-1){
+          const header = raw[headerIdx].map(h=>String(h).trim());
+          rows = raw.slice(headerIdx+1).map(r=>{
+            const obj = {};
+            header.forEach((h,i)=> obj[h] = r[i]);
+            return obj;
+          });
+        }
+      }
+      processMasterRows(rows);
+    };
+    reader.readAsArrayBuffer(f);
+  }
+});
+
+function processMasterRows(rows){
+  if(!rows || !rows.length){ alert('File master pelanggan kosong atau tidak terbaca.'); return; }
+  const keys = Object.keys(rows[0]);
+  const findCol = (...cands)=> cands.find(c=>keys.includes(c));
+  const cNama = findCol('Perusahaan','Nama Perusahaan');
+  if(!cNama){ alert('Kolom nama pelanggan ("Perusahaan") tidak ditemukan di file.'); return; }
+  const cKode = findCol('Kode','Kode Cust Lama');
+  const cAlamat = findCol('Alamat','Alamat Perusahaan');
+  const cCabang = findCol('KeteranganCabang','Cabang');
+  const cSales = findCol('NamaSR','Nama Sales (divisi baru)');
+  const cVisitDay = findCol('VisitDay','Visit Day (divisi baru)');
+
+  // full replace setiap upload — tapi arsip toko dihapus (deletedData) tidak ikut kesentuh
+  const newMasterData = [];
+  rows.forEach(r=>{
+    const nama = r[cNama];
+    if(!nama || String(nama).trim()==='') return;
+    newMasterData.push({
+      no: newMasterData.length+1,
+      kodeCust: cKode ? (r[cKode]||'') : '',
+      nama: String(nama).trim(),
+      alamat: cAlamat ? (r[cAlamat]||'') : '',
+      cabang: cCabang ? (r[cCabang]||'') : '',
+      namaSales: cSales ? (r[cSales]||'') : '',
+      visitDay: cVisitDay ? (r[cVisitDay]||'') : '',
+      key: normName(nama)
+    });
+  });
+  masterData = newMasterData;
+  document.getElementById('statusMaster').textContent = `✓ ${masterData.length} pelanggan termuat (replace data lama)`;
+  document.getElementById('dzMaster').classList.add('done');
+  tryRender();
+  saveToCloud();
+}
+
+document.getElementById('fileHist').addEventListener('change', function(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  Papa.parse(f, {
+    header:true,
+    skipEmptyLines:true,
+    complete: function(results){
+      const data = results.data;
+      visitMap = {};
+      let minD=null, maxD=null;
+      data.forEach(row=>{
+        const storeName = row['Store Name'];
+        const isCall = String(row['Is Call']||'').trim();
+        if(!storeName) return;
+        const key = normName(storeName);
+        const d = parseDMY((row['Date']||'').trim());
+        if(d){ if(!minD||d<minD) minD=d; if(!maxD||d>maxD) maxD=d; }
+        if(isCall !== '1') return; // hanya hitung visit valid (Is Call = 1)
+        if(!visitMap[key]) visitMap[key] = {count:0, omzet:0, lastDate:null};
+        visitMap[key].count += 1;
+        visitMap[key].omzet += parseNum(row['Vol. Act']);
+        if(d && (!visitMap[key].lastDate || d>visitMap[key].lastDate)) visitMap[key].lastDate = d;
+      });
+      periodInfo = (minD&&maxD) ? `${fmtDMY(minD)} s/d ${fmtDMY(maxD)}` : '';
+      document.getElementById('periodBadge').textContent = 'PERIODE: ' + (periodInfo||'—');
+      document.getElementById('statusHist').textContent = `✓ ${data.length} baris histori termuat`;
+      document.getElementById('dzHist').classList.add('done');
+      tryRender();
+      if(masterData) saveToCloud();
+    }
+  });
+});
+
+function tryRender(){
+  if(!masterData || !masterData.length) return;
+  document.getElementById('emptyMsg').style.display='none';
+  document.getElementById('dashboardArea').style.display='block';
+  renderArchive();
+
+  // populate sales filter
+  const salesSet = [...new Set(masterData.map(m=>m.namaSales).filter(Boolean))].sort();
+  const fSales = document.getElementById('fSales');
+  fSales.innerHTML = '<option value="">Semua Sales</option>' + salesSet.map(s=>`<option value="${s}">${s}</option>`).join('');
+
+  render();
+}
+
+function computeRows(){
+  return masterData.map(m=>{
+    const v = visitMap[m.key];
+    const count = v ? v.count : 0;
+    const omzet = v ? v.omzet : 0;
+    const lastDate = v ? v.lastDate : null;
+    let status = 'belum';
+    if(count>0 && omzet>0) status='omzet';
+    else if(count>0) status='visit';
+    return {...m, count, omzet, lastDate, status};
+  });
+}
+
+function render(){
+  const rows = computeRows();
+  const fSales = document.getElementById('fSales').value;
+  const fStatus = document.getElementById('fStatus').value;
+  const fSearch = document.getElementById('fSearch').value.trim().toUpperCase();
+
+  const filtered = rows.filter(r=>{
+    if(fSales && r.namaSales!==fSales) return false;
+    if(fStatus && r.status!==fStatus) return false;
+    if(fSearch && !r.nama.toUpperCase().includes(fSearch)) return false;
+    return true;
+  });
+
+  const cardScope = rows.filter(r=>{
+    if(!r.visitDay || String(r.visitDay).trim()==='') return false; // Total Coverage cuma yang punya Visit Day (bukan NOO)
+    if(fSales && r.namaSales!==fSales) return false;
+    if(fSearch && !r.nama.toUpperCase().includes(fSearch)) return false;
+    return true;
+  });
+  document.getElementById('cTotal').textContent = cardScope.length;
+  document.getElementById('cBelum').textContent = cardScope.filter(r=>r.status==='belum').length;
+  document.getElementById('cVisit').textContent = cardScope.filter(r=>r.status==='visit').length;
+  document.getElementById('cOmzet').textContent = cardScope.filter(r=>r.status==='omzet').length;
+
+  const statusMeta = {
+    belum:{cls:'st-belum', label:'Belum Divisit'},
+    visit:{cls:'st-visit', label:'Divisit, Belum Omzet'},
+    omzet:{cls:'st-omzet', label:'Sudah Ada Omzet'}
+  };
+
+  const tbody = document.getElementById('tblBody');
+  tbody.innerHTML = filtered.map((r,i)=>{
+    const sm = statusMeta[r.status];
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="namecell">${r.nama}</td>
+      <td class="subtext">${r.alamat}</td>
+      <td>${r.namaSales}</td>
+      <td class="subtext">${r.visitDay}</td>
+      <td class="num">${r.count}</td>
+      <td class="subtext">${r.lastDate?fmtDMY(r.lastDate):'-'}</td>
+      <td class="num">${r.omzet>0?fmtRupiah(r.omzet):'-'}</td>
+      <td><span class="status-pill ${sm.cls}">${sm.label}</span></td>
+      <td><button class="btn-del" data-key="${r.key.replace(/"/g,'&quot;')}" title="Hapus toko ini">✕</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" class="empty">Tidak ada data sesuai filter</td></tr>';
+
+  tbody.querySelectorAll('.btn-del').forEach(btn=>{
+    btn.addEventListener('click', ()=> deleteStore(btn.dataset.key));
+  });
+}
+
+let pendingDelete = null; // {row, index, timeoutId}
+
+function deleteStore(key){
+  const index = masterData.findIndex(m=>m.key===key);
+  if(index===-1) return;
+  const row = masterData[index];
+  const v = visitMap[key];
+  const snapshot = {
+    ...row,
+    count: v ? v.count : 0,
+    omzet: v ? v.omzet : 0,
+    lastDate: v ? v.lastDate : null,
+    status: (v && v.count>0 && v.omzet>0) ? 'omzet' : (v && v.count>0) ? 'visit' : 'belum'
+  };
+
+  // if a previous delete is still pending undo, finalize it now
+  if(pendingDelete) finalizeDelete();
+
+  masterData.splice(index,1);
+  render();
+  showUndoToast(row.nama);
+
+  pendingDelete = { row: snapshot, index };
+  pendingDelete.timeoutId = setTimeout(finalizeDelete, 6000);
+}
+
+function undoDelete(){
+  if(!pendingDelete) return;
+  clearTimeout(pendingDelete.timeoutId);
+  masterData.splice(pendingDelete.index, 0, pendingDelete.row);
+  pendingDelete = null;
+  hideUndoToast();
+  render();
+}
+
+function finalizeDelete(){
+  if(!pendingDelete) return;
+  deletedData.push({...pendingDelete.row, deletedAt: new Date().toISOString()});
+  pendingDelete = null;
+  hideUndoToast();
+  saveToCloud();
+  renderArchive();
+}
+
+function renderArchive(){
+  const panel = document.getElementById('archivePanel');
+  const body = document.getElementById('archiveBody');
+  if(!deletedData || !deletedData.length){
+    panel.style.display = 'none';
+    body.innerHTML = '';
+    return;
+  }
+  panel.style.display = 'block';
+  document.getElementById('archiveCount').textContent = `${deletedData.length} toko diarsip`;
+  body.innerHTML = deletedData.map((r,i)=>{
+    const d = r.deletedAt ? new Date(r.deletedAt) : null;
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="namecell">${r.nama}</td>
+      <td class="subtext">${r.alamat||''}</td>
+      <td>${r.namaSales||''}</td>
+      <td class="subtext">${d && !isNaN(d.getTime()) ? fmtDMY(d) : '-'}</td>
+      <td><button class="btn ghost" style="padding:4px 10px;font-size:11px;" data-key="${r.key.replace(/"/g,'&quot;')}">Restore</button></td>
+    </tr>`;
+  }).join('');
+  body.querySelectorAll('button[data-key]').forEach(btn=>{
+    btn.addEventListener('click', ()=> restoreStore(btn.dataset.key));
+  });
+}
+
+function restoreStore(key){
+  const idx = deletedData.findIndex(r=>r.key===key);
+  if(idx===-1) return;
+  const row = deletedData[idx];
+  deletedData.splice(idx,1);
+  const { deletedAt, count, omzet, lastDate, status, ...clean } = row;
+  if(!masterData) masterData = [];
+  masterData.push(clean);
+  render();
+  renderArchive();
+  saveToCloud();
+}
+
+document.getElementById('btnExportArchive').addEventListener('click', ()=>{
+  if(!deletedData || !deletedData.length) return;
+  const out = deletedData.map((r,i)=>({
+    'No': i+1,
+    'Kode': r.kodeCust||'',
+    'Nama Pelanggan': r.nama,
+    'Alamat': r.alamat||'',
+    'Cabang': r.cabang||'',
+    'Sales': r.namaSales||'',
+    'Visit Day': r.visitDay||'',
+    'Jumlah Visit': r.count||0,
+    'Total Omzet': r.omzet||0,
+    'Tgl Dihapus': r.deletedAt ? fmtDMY(new Date(r.deletedAt)) : '-'
+  }));
+  const ws = XLSX.utils.json_to_sheet(out);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Arsip Pelanggan Dihapus');
+  XLSX.writeFile(wb, 'Arsip_Pelanggan_' + new Date().toISOString().slice(0,10) + '.xlsx');
+});
+
+function showUndoToast(nama){
+  const t = document.getElementById('undoToast');
+  document.getElementById('undoToastMsg').textContent = `Toko "${nama}" dihapus.`;
+  t.style.display = 'flex';
+}
+function hideUndoToast(){
+  document.getElementById('undoToast').style.display = 'none';
+}
+document.getElementById('undoToastBtn').addEventListener('click', undoDelete);
+
+document.getElementById('fSales').addEventListener('change', render);
+document.getElementById('fStatus').addEventListener('change', render);
+document.getElementById('fSearch').addEventListener('input', render);
+
+document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
+
+document.getElementById('btnExportXlsx').addEventListener('click', ()=>{
+  const rows = computeRows();
+  const fSales = document.getElementById('fSales').value;
+  const fStatus = document.getElementById('fStatus').value;
+  const fSearch = document.getElementById('fSearch').value.trim().toUpperCase();
+  const filtered = rows.filter(r=>{
+    if(fSales && r.namaSales!==fSales) return false;
+    if(fStatus && r.status!==fStatus) return false;
+    if(fSearch && !r.nama.toUpperCase().includes(fSearch)) return false;
+    return true;
+  });
+  const statusLabel = {belum:'Belum Divisit', visit:'Divisit, Belum Omzet', omzet:'Sudah Ada Omzet'};
+  const out = filtered.map((r,i)=>({
+    'No': i+1,
+    'Nama Toko': r.nama,
+    'Alamat': r.alamat,
+    'Sales': r.namaSales,
+    'Visit Day': r.visitDay,
+    'Jumlah Visit': r.count,
+    'Tgl Visit Terakhir': r.lastDate?fmtDMY(r.lastDate):'-',
+    'Total Omzet': r.omzet,
+    'Status': statusLabel[r.status]
+  }));
+  const ws = XLSX.utils.json_to_sheet(out);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Monitoring NOO');
+  XLSX.writeFile(wb, 'Monitoring_NOO_' + new Date().toISOString().slice(0,10) + '.xlsx');
+});
+</script>
+</body>
+</html>
