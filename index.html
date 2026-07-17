@@ -403,9 +403,17 @@ function gmapsLink(nama, alamat){
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 function parseDMY(s){
-  // format DD-MM-YYYY
+  if(s instanceof Date) return isNaN(s.getTime()) ? null : s;
+  if(typeof s === 'number'){
+    // Excel serial date
+    const d = XLSX.SSF.parse_date_code(s);
+    return d ? new Date(d.y, d.m-1, d.d) : null;
+  }
+  s = String(s||'').trim();
   const p = s.split('-');
   if(p.length!==3) return null;
+  // DD-MM-YYYY (4-digit year last) vs YYYY-MM-DD (4-digit year first)
+  if(p[0].length===4) return new Date(+p[0], +p[1]-1, +p[2]);
   return new Date(+p[2], +p[1]-1, +p[0]);
 }
 function fmtDMY(d){
@@ -497,7 +505,23 @@ document.getElementById('fileHist').addEventListener('change', function(e){
     reader.onload = function(ev){
       const wb = XLSX.read(ev.target.result, {type:'array'});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      let rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      // fallback for report files where the real header isn't on row 1 (title/info rows above it)
+      if(!rows.length || !Object.keys(rows[0]).includes('Store Name')){
+        const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        let headerIdx = -1;
+        for(let i=0;i<raw.length;i++){
+          if(raw[i].some(c => String(c).trim()==='Store Name')){ headerIdx = i; break; }
+        }
+        if(headerIdx>-1){
+          const header = raw[headerIdx].map(h=>String(h).trim());
+          rows = raw.slice(headerIdx+1).map(r=>{
+            const obj = {};
+            header.forEach((h,i)=> obj[h] = r[i]);
+            return obj;
+          });
+        }
+      }
       processHistRows(rows);
     };
     reader.readAsArrayBuffer(f);
@@ -519,7 +543,7 @@ function processHistRows(data){
     const isCall = String(row['Is Call']||'').trim();
     if(!storeName) return;
     const key = normName(storeName);
-    const d = parseDMY(String(row['Date']||'').trim());
+    const d = parseDMY(row['Date']);
     if(d){ if(!minD||d<minD) minD=d; if(!maxD||d>maxD) maxD=d; }
     if(isCall !== '1') return; // hanya hitung visit valid (Is Call = 1)
     if(!visitMap[key]) visitMap[key] = {count:0, omzet:0, lastDate:null};
