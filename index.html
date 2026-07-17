@@ -464,14 +464,18 @@ document.getElementById('fileMaster').addEventListener('change', function(e){
 function processMasterRows(rows){
   if(!rows || !rows.length){ alert('File master pelanggan kosong atau tidak terbaca.'); return; }
   const keys = Object.keys(rows[0]);
-  const findCol = (...cands)=> cands.find(c=>keys.includes(c));
+  const normKey = s => s.toString().trim().toLowerCase().replace(/\s+/g,' ');
+  const findCol = (...cands)=>{
+    const normCands = cands.map(normKey);
+    return keys.find(k => normCands.includes(normKey(k)));
+  };
   const cNama = findCol('Perusahaan','Nama Perusahaan');
   if(!cNama){ alert('Kolom nama pelanggan ("Perusahaan") tidak ditemukan di file.'); return; }
   const cKode = findCol('Kode','Kode Cust Lama');
   const cAlamat = findCol('Alamat','Alamat Perusahaan');
   const cCabang = findCol('KeteranganCabang','Cabang');
   const cSales = findCol('NamaSR','Nama Sales (divisi baru)');
-  const cVisitDay = findCol('VisitDay','Visit Day (divisi baru)');
+  const cVisitDay = findCol('VisitDay','Visit Day (divisi baru)','Visit Day','Hari Visit','HariVisit');
 
   // full replace setiap upload — tapi arsip toko dihapus (deletedData) tidak ikut kesentuh
   const newMasterData = [];
@@ -490,7 +494,8 @@ function processMasterRows(rows){
     });
   });
   masterData = newMasterData;
-  document.getElementById('statusMaster').textContent = `✓ ${masterData.length} pelanggan termuat (replace data lama)`;
+  const visitDayWarn = cVisitDay ? '' : ' — ⚠ kolom Visit Day tidak ditemukan, Total Coverage akan 0';
+  document.getElementById('statusMaster').textContent = `✓ ${masterData.length} pelanggan termuat (replace data lama)${visitDayWarn}`;
   document.getElementById('dzMaster').classList.add('done');
   tryRender();
   saveToCloud();
