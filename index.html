@@ -157,7 +157,25 @@ footer{margin-top:20px;font-family:var(--mono);font-size:11px;color:#9a9280;text
     </div>
 
     <div class="panel">
-      <h2>2. Filter &amp; Aksi</h2>
+      <h2>Ringkasan per Sales</h2>
+      <div class="tablewrap" style="max-height:320px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Sales</th>
+              <th style="text-align:right;">Total Coverage</th>
+              <th style="text-align:right;">Belum Divisit</th>
+              <th style="text-align:right;">Divisit, Belum Omzet</th>
+              <th style="text-align:right;">Sudah Ada Omzet</th>
+            </tr>
+          </thead>
+          <tbody id="salesSummaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>3. Filter &amp; Aksi</h2>
       <div class="controls">
         <select id="fSales"><option value="">Semua Sales</option></select>
         <select id="fStatus">
@@ -591,6 +609,29 @@ function computeRows(){
   });
 }
 
+function renderSalesSummary(cardScope){
+  const body = document.getElementById('salesSummaryBody');
+  if(!body) return;
+  const bySales = {};
+  cardScope.forEach(r=>{
+    const key = r.namaSales || '(Tanpa Sales)';
+    if(!bySales[key]) bySales[key] = {total:0, belum:0, visit:0, omzet:0};
+    bySales[key].total++;
+    bySales[key][r.status]++;
+  });
+  const names = Object.keys(bySales).sort();
+  body.innerHTML = names.map(name=>{
+    const s = bySales[name];
+    return `<tr>
+      <td class="namecell">${name}</td>
+      <td class="num">${s.total}</td>
+      <td class="num">${s.belum}</td>
+      <td class="num">${s.visit}</td>
+      <td class="num">${s.omzet}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" class="empty">Tidak ada data</td></tr>';
+}
+
 function render(){
   const rows = computeRows();
   const fSales = document.getElementById('fSales').value;
@@ -614,6 +655,8 @@ function render(){
   document.getElementById('cBelum').textContent = cardScope.filter(r=>r.status==='belum').length;
   document.getElementById('cVisit').textContent = cardScope.filter(r=>r.status==='visit').length;
   document.getElementById('cOmzet').textContent = cardScope.filter(r=>r.status==='omzet').length;
+
+  renderSalesSummary(cardScope);
 
   const statusMeta = {
     belum:{cls:'st-belum', label:'Belum Divisit'},
