@@ -2,6 +2,25 @@
 import XLSX from "xlsx";
 import fs from "fs";
 
+// Jika data sudah memakai file bertanggal hari ini (WITA), tidak perlu cek Nextcloud lagi.
+// Jalankan manual (FORCE=true) selalu mengecek.
+const BULAN = { januari: 1, februari: 2, maret: 3, april: 4, mei: 5, juni: 6, juli: 7, agustus: 8, september: 9, oktober: 10, november: 11, desember: 12 };
+function tanggalLabel(label) {
+  const m = String(label || "").match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+  if (!m || !BULAN[m[2].toLowerCase()]) return null;
+  return m[3] + "-" + String(BULAN[m[2].toLowerCase()]).padStart(2, "0") + "-" + m[1].padStart(2, "0");
+}
+const hariIni = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+if (process.env.FORCE !== "true") {
+  try {
+    const cur = JSON.parse(fs.readFileSync("stok-data.json", "utf8"));
+    if (tanggalLabel(cur.label) === hariIni) {
+      console.log("Data sudah memakai file tanggal " + hariIni + ", Nextcloud tidak dicek lagi.");
+      process.exit(0);
+    }
+  } catch (e) { /* belum ada data, lanjut */ }
+}
+
 const TOKEN = "wSaQw8zZ6MPPy29";
 const BASE = `https://bench.borwita.co.id/public.php/dav/files/${TOKEN}/`;
 const headers = { Authorization: "Basic " + Buffer.from(TOKEN + ":").toString("base64") };

@@ -20,6 +20,8 @@ jobs:
           node-version: 20
       - run: npm install xlsx@0.18.5 --no-save
       - run: node scripts/fetch-stock.mjs
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' }}
       - name: Commit jika data berubah
         run: |
           git config user.name "github-actions[bot]"
