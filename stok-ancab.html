@@ -250,9 +250,11 @@ function vAncab(){
     const sNote=m.sAp>0?`<span>Pengirim DOI <b>${f0(m.sBefore)}→${f0(m.sAfter)}</b></span>`:`<span>Pengirim tanpa penjualan</span>`;
     return `<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
       <div style="min-width:0"><div class="name">${esc(m.sku)}</div>
-      <div class="route">${dir==="in"?"Dari":"Ke"} <b>${BN[other]}</b></div></div></div>
+      <div class="route">${f1(m.rSoh)} ctn di penerima</div></div></div>
       <div class="facts"><span>Penerima DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b></span>${sNote}</div>
       <div class="row">${intNote}${m.sInt>0?`<span class="pill muted">Pengirim ada intransit ${f0(m.sInt)}</span>`:""}</div></div>`};
+  const grp=(list,key,dir)=>BR.filter(b=>list.some(m=>m[key]===b)).map(b=>{const g=list.filter(m=>m[key]===b).sort((x,y)=>y.q-x.q);
+    return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><span class="lbl" style="font-size:15px;color:var(--ink)">ANCAB ${dir==="in"?"DARI":"KE"} ${BN[b].toUpperCase()}</span><span class="pill">${g.length} item · ${f0(g.reduce((s,x)=>s+x.q,0))} ctn</span></div><div class="stack">${g.map(m=>card(m,dir)).join("")}</div>`}).join("");
   const um=unmet.filter(u=>u.b===S.br).sort((a,c)=>c.ap-a.ap).slice(0,12);
   const umHtml=um.map(u=>`<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(u.sku)}</div><div class="brand">${esc(u.why)}</div></div><div class="doi ${sev(u.d)}">${u.soh<=0.05?"0":f0(u.d)}<small>HARI DOI</small></div></div>
     <div class="row">${intPill(u.int)}<span class="facts"><span>AP3M <b>${f1(u.ap)}</b>/bln</span></span></div></div>`).join("");
@@ -266,8 +268,8 @@ function vAncab(){
     <div class="row" style="margin-top:10px">
       <label class="note" for="keep">Sisa pengirim</label><input type="number" id="keep" value="${S.keep}" min="0" max="120" inputmode="numeric">
       <label class="note" for="add">Tambah</label><input type="number" id="add" value="${S.add}" min="1" max="120" inputmode="numeric"><span class="note">hari</span></div></div>
-  ${inn.length?`<div class="lbl" style="margin:16px 0 8px">Terima di ${BN[S.br]}</div><div class="stack">${inn.sort((a,c)=>c.q-a.q).map(m=>card(m,"in")).join("")}</div>`:""}
-  ${out.length?`<div class="lbl" style="margin:16px 0 8px">Kirim dari ${BN[S.br]}</div><div class="stack">${out.sort((a,c)=>c.q-a.q).map(m=>card(m,"out")).join("")}</div>`:""}
+  ${grp(inn,"from","in")}
+  ${grp(out,"to","out")}
   ${!inn.length&&!out.length?'<div class="card empty">Tidak ada Ancab untuk cabang ini.</div>':""}
   ${(inn.length||out.length)?`<button class="btn ghost" id="copy" style="margin-top:14px;width:100%">Salin ringkasan untuk WhatsApp</button>`:""}
   ${um.length?`<div class="lbl" style="margin:20px 0 8px">Belum tertutup Ancab</div><div class="stack">${umHtml}</div>`:""}`;
@@ -289,8 +291,8 @@ document.addEventListener("click",e=>{
   if(e.target.id==="copy"){
     const {moves}=compute();const L=[`Ancab ${BN[S.br]} (data ${S.label})`];
     const inn=moves.filter(m=>m.to===S.br),out=moves.filter(m=>m.from===S.br);
-    if(inn.length){L.push("","TERIMA:");inn.forEach(m=>L.push(`- ${m.sku}: ${f0(m.q)} ctn dari ${BN[m.from]}`))}
-    if(out.length){L.push("","KIRIM:");out.forEach(m=>L.push(`- ${m.sku}: ${f0(m.q)} ctn ke ${BN[m.to]}`))}
+    BR.forEach(b=>{const g=inn.filter(m=>m.from===b);if(g.length){L.push("","ANCAB DARI "+BN[b].toUpperCase()+":");g.forEach(m=>L.push("- "+m.sku+": "+f0(m.q)+" ctn"))}});
+    BR.forEach(b=>{const g=out.filter(m=>m.to===b);if(g.length){L.push("","ANCAB KE "+BN[b].toUpperCase()+":");g.forEach(m=>L.push("- "+m.sku+": "+f0(m.q)+" ctn"))}});
     const txt=L.join("\n");
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Ringkasan tersalin")).catch(()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Ringkasan tersalin")}catch(x){toast("Gagal menyalin")}ta.remove()});
   }
