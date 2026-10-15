@@ -90,12 +90,17 @@ h2{font:700 20px var(--f-display);margin:22px 0 10px;letter-spacing:.04em;text-t
 a{color:var(--accent)}
 select,input[type=number]{font:500 14px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:9px 10px;min-height:42px}
 input[type=number]{width:76px}
-nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab{border:0;border-top:4px solid transparent;background:transparent;color:#9FADB8;padding:7px 4px 9px;font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px}
 .tab .no{font:600 12px var(--f-mono);width:22px;height:22px;border-radius:4px;border:1.5px solid currentColor;display:grid;place-items:center}
 .tab[aria-selected="true"]{color:#fff;border-top-color:var(--rack)}
 .tab[aria-selected="true"] .no{background:var(--rack);color:#1A0E05;border-color:var(--rack)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--graphite);color:var(--on-graphite);padding:9px 14px;border-radius:6px;font-size:13px;z-index:9;max-width:90vw}
+.doi.ok{background:var(--ok);color:#fff} .doi.na{background:var(--line);color:var(--muted)}
+.doi.na small{letter-spacing:.04em}
+.pick{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;color:var(--ink);font:500 14px var(--f-body);cursor:pointer;min-height:46px}
+.pick[aria-pressed="true"]{border-color:var(--rack);background:var(--bg)}
+.pick:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .adv{border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px;font-size:14px}
@@ -136,6 +141,7 @@ html.locked .wrap,html.locked nav.tabs,html.locked .toast{display:none!important
   <button class="tab" role="tab" data-tab="data" aria-selected="true"><span class="no">1</span>Tarik data</button>
   <button class="tab" role="tab" data-tab="doi" aria-selected="false"><span class="no">2</span>DOI rendah</button>
   <button class="tab" role="tab" data-tab="ancab" aria-selected="false"><span class="no">3</span>Saran Ancab</button>
+  <button class="tab" role="tab" data-tab="item" aria-selected="false"><span class="no">4</span>Cek item</button>
 </nav>
 <div id="toast" class="toast" hidden></div>
 
@@ -147,15 +153,19 @@ const REG={
     allow:(f,t)=>f!==t&&(f==="MAKASSAR"||t==="MAKASSAR"),rule:"Rute hanya Makassar ⇄ Bone, Parepare, Palopo."},
   UTARA:{br:["MANADO","GORONTALO"],low:["GORONTALO"],
     allow:(f,t)=>f==="MANADO"&&t==="GORONTALO",rule:"Rute hanya Manado → Gorontalo."}};
+const HUB=["PAREPARE","PALOPO","BONE"];
+REG.SULAWESI={br:["MAKASSAR","BONE","PAREPARE","PALOPO","PALU","POSO","MANADO","GORONTALO","KENDARI","MAMUJU","BAUBAU"],low:[],
+  allow:(f,t)=>f!==t&&((f==="MAKASSAR"&&HUB.includes(t))||(t==="MAKASSAR"&&HUB.includes(f))||(f==="PALU"&&t==="POSO")||(f==="MANADO"&&t==="GORONTALO")),
+  rule:"Rute: Makassar ⇄ Parepare, Palopo, Bone · Palu → Poso · Manado → Gorontalo."};
 const RG=()=>REG[S.reg],BRS=()=>REG[S.reg].br,LOWB=()=>REG[S.reg].low;
 const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
-const BN={MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
+const BN={PALU:"Palu",POSO:"Poso",KENDARI:"Kendari",MAMUJU:"Mamuju",BAUBAU:"Bau-Bau",MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
-  cat:"TRADITIONAL",reg:"SULSEL",open:{},rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
+  cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
 
 const $=s=>document.querySelector(s);
-const rowsC=()=>S.rows.filter(r=>r.cat===S.cat&&BRS().includes(r.b));
+const rowsC=cfg=>{const br=(cfg||RG()).br;return S.rows.filter(r=>r.cat===S.cat&&br.includes(r.b))};
 function fixBr(){const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[0]}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const f1=n=>n.toLocaleString("id-ID",{maximumFractionDigits:1});
@@ -172,17 +182,18 @@ function lowItems(b){
 }
 
 /* Hitung saran Ancab menurut rute wilayah (Sulsel: hub Makassar; Manado-Gorontalo: Manado ke Gorontalo), pengirim sisa >= keep hari, penerima +add hari */
-function compute(){
+function compute(cfg,only){
+  cfg=cfg||RG();const br=cfg.br,al=cfg.allow;
   const g={};
-  rowsC().filter(r=>S.prun||r.st==="AKTIF").forEach(r=>{const k=r.code+"|"+r.sku;(g[k]=g[k]||{})[r.b]=r});
+  rowsC(cfg).filter(r=>S.prun||r.st==="AKTIF").forEach(r=>{const k=r.code+"|"+r.sku;if(only&&k!==only)return;(g[k]=g[k]||{})[r.b]=r});
   const moves=[],unmet=[];
   Object.values(g).forEach(m=>{
     const sur={},sent={};
     Object.keys(m).forEach(b=>{const o=m[b];sur[b]=Math.max(0,Math.floor(o.ap>0?o.soh-o.ap*S.keep/30:o.soh));sent[b]=0});
-    const recv=Object.keys(m).filter(b=>BRS().some(s=>RG().allow(s,b))&&m[b].ap>0&&doi(m[b])<S.thr).sort((a,c)=>doi(m[a])-doi(m[c]));
+    const recv=Object.keys(m).filter(b=>br.some(s=>al(s,b))&&m[b].ap>0&&doi(m[b])<S.thr).sort((a,c)=>doi(m[a])-doi(m[c]));
     recv.forEach(b=>{
       const o=m[b];let need=Math.floor(o.ap*S.add/30),got=0;
-      const allowed=BRS().filter(x=>x!==b&&RG().allow(x,b));
+      const allowed=br.filter(x=>x!==b&&al(x,b));
       const srcs=allowed.filter(x=>m[x]).sort((x,y)=>sur[y]-sur[x]);
       srcs.forEach(sn=>{
         if(need<=0)return;const q=Math.min(need,sur[sn]);if(q<1)return;
@@ -309,18 +320,84 @@ function vAncab(){
 function paintHead(){
   $("#stamp").textContent=S.label;
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
-  $("#sub").textContent=CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · ");
+  const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item";
+  $("#sub").textContent=CN[S.cat]+" · "+(S.tab==="item"?"Sulawesi, semua cabang":BRS().map(b=>BN[b]).join(" · "));
 }
+const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
+function itemIndex(){
+  const items={};
+  rowsC(REG.SULAWESI).forEach(r=>{const k=r.code+"|"+r.sku;const it=items[k]||(items[k]={k,sku:r.sku,brand:r.brand,apv:0});it.apv+=r.apv});
+  return{items,list:Object.values(items)};
+}
+function matchesHtml(){
+  const {list}=itemIndex();
+  const terms=S.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const f=list.filter(it=>terms.every(t=>(it.sku+" "+it.brand).toLowerCase().includes(t))).sort((a,b)=>b.apv-a.apv);
+  const head=terms.length?f.length+" item cocok"+(f.length>8?", 8 teratas":""):"Item dengan nilai AP3M tertinggi";
+  return `<div class="note" style="margin:4px 0">${head}</div>`+f.slice(0,8).map(it=>`<button type="button" class="pick" data-k="${esc(it.k)}" aria-pressed="${it.k===S.item}"><b>${esc(it.sku)}</b><span class="note">${esc(it.brand)} · AP3M ${fRp(it.apv)}/bln semua cabang</span></button>`).join("")||'<div class="empty">Tidak ada item yang cocok.</div>';
+}
+function vItem(){
+  const cfg=REG.SULAWESI,br=cfg.br;
+  const {items,list}=itemIndex();
+  if(!S.item||!items[S.item]){const t=list.slice().sort((a,b)=>b.apv-a.apv)[0];S.item=t?t.k:null}
+  const it=S.item?items[S.item]:null;
+  const search=`<h2>Cek satu item</h2>
+  <div class="card stack"><input type="search" id="q" value="${esc(S.q)}" placeholder="Cari item, mis. jeruk peras" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;min-height:46px">
+  <div id="matches" class="stack" style="gap:8px">${matchesHtml()}</div></div>`;
+  if(!it)return search+'<div class="card empty" style="margin-top:12px">Belum ada data item.</div>';
+  const byB={};rowsC(cfg).filter(r=>r.code+"|"+r.sku===S.item).forEach(r=>byB[r.b]=r);
+  const have=br.filter(b=>byB[b]);
+  const sumSoh=have.reduce((s,b)=>s+byB[b].soh,0),sumInt=have.reduce((s,b)=>s+byB[b].int,0),sumAp=have.reduce((s,b)=>s+byB[b].ap,0),sumApv=have.reduce((s,b)=>s+byB[b].apv,0);
+  const dAll=sumAp>0?sumSoh/sumAp*30:null;
+  const c=compute(cfg,S.item);
+  const aktif=have.some(b=>byB[b].st==="AKTIF");
+  const cards=have.slice().sort((a,b)=>{const x=doi(byB[a]),y=doi(byB[b]);return (x==null)-(y==null)||(x==null?0:x-y)}).map(b=>{
+    const r=byB[b],d=doi(r),to=br.filter(x=>cfg.allow(b,x)),fr=br.filter(x=>cfg.allow(x,b));
+    const rt=to.length||fr.length?[to.length?"Kirim ke "+to.map(x=>BN[x]).join(", "):"",fr.length?"Terima dari "+fr.map(x=>BN[x]).join(", "):""].filter(Boolean).join(" · "):"Tanpa rute Ancab";
+    return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${BN[b]}</div><div class="brand">${esc(r.st)} · ${rt}</div></div>
+      <div class="doi ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></div></div>
+      ${d!=null?meter(d):""}
+      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span><span><b>${fRp(r.apv)}</b>/bln</span></div>
+      <div class="row">${intPill(r.int)}</div></div>`}).join("");
+  const missing=br.filter(b=>!byB[b]).map(b=>BN[b]);
+  const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
+    <div style="min-width:0"><div class="name">${BN[m.from]} → ${BN[m.to]}</div><div class="route">≈ <b>${fRp(m.v)}</b></div></div></div>
+    <div class="facts"><span>${BN[m.to]} DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b></span><span>${BN[m.from]} ${m.sAp>0?"DOI <b>"+f0(m.sBefore)+"→"+f0(m.sAfter)+"</b>":"tanpa penjualan"}</span></div>
+    <div class="row">${m.sInt>0?`<span class="pill warn">Pengirim ada intransit ${f0(m.sInt)} ctn</span>`:'<span class="pill muted">Pengirim tanpa intransit</span>'}</div></div>`).join("");
+  const lowNoRoute=have.filter(b=>byB[b].ap>0&&doi(byB[b])<S.thr&&!br.some(s=>cfg.allow(s,b))).map(b=>`${BN[b]} (DOI ${f0(doi(byB[b]))})`);
+  const why=c.unmet.map(u=>`<li><b>${BN[u.b]}</b>: ${esc(u.why)}.</li>`).join("");
+  let bal;
+  if(!aktif&&!S.prun)bal='<div class="card note">Item ini berstatus bukan AKTIF, jadi tidak diikutkan dalam Ancab. Nyalakan "Sertakan item PRUNNING" di tab Saran Ancab untuk memasukkannya.</div>';
+  else bal=(moveCards?`<div class="stack">${moveCards}</div>`:'<div class="card note">Tidak ada saran balancing untuk item ini dengan aturan sekarang.</div>')
+    +(why?`<div class="card note" style="margin-top:10px"><b>Belum tertutup:</b><ul style="margin:6px 0 0;padding-left:18px">${why}</ul></div>`:"")
+    +(lowNoRoute.length?`<div class="card note" style="margin-top:10px"><b>DOI rendah tanpa rute Ancab:</b> ${lowNoRoute.join(", ")}. Perlu order dari pusat.</div>`:"");
+  return search+`
+  <h2>${esc(it.sku)}</h2>
+  <div class="note" style="margin:-6px 0 10px">${esc(it.brand)} · ${CN[S.cat]}</div>
+  <div class="card"><div class="grid2">
+    <div class="stat"><span class="v">${f0(sumSoh)}</span><span class="k">ctn stok semua cabang</span></div>
+    <div class="stat"><span class="v">${f0(sumInt)}</span><span class="k">ctn intransit</span></div>
+    <div class="stat"><span class="v">${dAll==null?"–":f0(dAll)}</span><span class="k">hari DOI gabungan</span></div>
+    <div class="stat"><span class="v">${fRp(sumApv)}</span><span class="k">AP3M per bulan</span></div></div></div>
+  <h2>Saran balancing</h2>
+  <p class="note" style="margin:-4px 0 10px">${cfg.rule} Pengirim tetap punya minimal ${S.keep} hari, penerima ditambah maksimal ${S.add} hari. Aturan bisa diubah di tab Saran Ancab.</p>
+  ${bal}
+  <h2>Per cabang</h2>
+  <div class="stack">${cards}</div>
+  ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
+}
+const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem()};
 function render(){fixBr();
   paintHead();
-  $("#view").innerHTML=S.tab==="data"?vData():S.tab==="doi"?vDoi():vAncab();
+  $("#view").innerHTML=VIEWS[S.tab]();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   window.scrollTo(0,0);
 }
-function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHTML=S.tab==="data"?vData():S.tab==="doi"?vDoi():vAncab();window.scrollTo(0,y)}
+function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHTML=VIEWS[S.tab]();window.scrollTo(0,y)}
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
+  const pk=e.target.closest(".pick");if(pk){S.item=pk.dataset.k;refresh();return}
   const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;refresh();return}
@@ -336,6 +413,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tap")){e.preventDefault();e.target.click()}});
+document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const m=$("#matches");if(m)m.innerHTML=matchesHtml()}});
 document.addEventListener("change",e=>{
   const id=e.target.id;
   if(id==="thr"){S.thr=Math.max(1,+e.target.value||30);refresh()}
@@ -358,7 +436,7 @@ async function loadFile(f){
     if(!ws){wb=XLSX.read(buf,{type:"array"});ws=wb.Sheets["Update Stock"]}
     if(!ws){msg.textContent="Sheet 'Update Stock' tidak ditemukan di file ini.";return}
     const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-    const map={"MAKASSAR":"MAKASSAR","BONE":"BONE","PARE-PARE":"PAREPARE","PAREPARE":"PAREPARE","PALOPO":"PALOPO","MANADO":"MANADO","GORONTALO":"GORONTALO"};
+    const map={"MAKASSAR":"MAKASSAR","BONE":"BONE","PARE-PARE":"PAREPARE","PAREPARE":"PAREPARE","PALOPO":"PALOPO","MANADO":"MANADO","GORONTALO":"GORONTALO","PALU":"PALU","POSO":"POSO","KENDARI":"KENDARI","MAMUJU":"MAMUJU","BAU-BAU":"BAUBAU"};
     const rows=[];
     a.forEach(r=>{const b=map[String(r[1]||"").trim().toUpperCase()];
       const cat=String(r[2]||"").trim().toUpperCase();
