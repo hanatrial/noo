@@ -462,7 +462,11 @@ async function pullLatest(manual){
     S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:a[8]||"TRADITIONAL",apv:a[9]||0,sohv:a[10]||0}));
     S.label=j.label;S.src=j.src;
     S.mod=new Date(j.modified).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" WITA";
-    refresh();set((manual?"Ditarik ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+". Server mengecek Nextcloud tiap 10 menit, 09.00-15.00 WITA, Senin-Sabtu.");
+    refresh();const bln={januari:1,februari:2,maret:3,april:4,mei:5,juni:6,juli:7,agustus:8,september:9,oktober:10,november:11,desember:12};
+    const mm=String(j.label||"").match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+    const lbl=mm&&bln[mm[2].toLowerCase()]?mm[3]+"-"+String(bln[mm[2].toLowerCase()]).padStart(2,"0")+"-"+mm[1].padStart(2,"0"):null;
+    const hariIni=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+    set((manual?"Dimuat ulang ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+" dari stok-data.json (tidak menghubungi Nextcloud). "+(lbl===hariIni?"File tanggal hari ini sudah didapat, server tidak mengecek Nextcloud lagi.":"Server mengecek Nextcloud tiap 10 menit, 09.00-15.00 WITA, Senin-Sabtu, sampai file tanggal hari ini ada."));
     if(manual)toast("Data "+j.label+" dimuat");
   }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.");if(manual)toast("Gagal menarik data")}
 }
