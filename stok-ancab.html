@@ -227,7 +227,7 @@ function vData(){
   <h2>Cara tarik data terbaru</h2>
   <div class="card">
     <ol class="steps">
-      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 10 menit pada jam kerja.</li>
+      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 10 menit, 09.00-15.00 WITA, Senin sampai Sabtu.</li>
       <li>File dengan kolom <b>Modified</b> paling baru yang dipakai, bukan yang namanya paling akhir.</li>
       <li>Hasilnya dimuat otomatis saat halaman dibuka. Pilih file manual hanya jika perlu data yang lebih baru dari itu.</li>
     </ol>
@@ -384,7 +384,7 @@ async function pullLatest(manual){
     S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:a[8]||"TRADITIONAL",apv:a[9]||0,sohv:a[10]||0}));
     S.label=j.label;S.src=j.src;
     S.mod=new Date(j.modified).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" WITA";
-    refresh();set((manual?"Ditarik ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+". Server mengecek Nextcloud tiap 10 menit.");
+    refresh();set((manual?"Ditarik ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+". Server mengecek Nextcloud tiap 10 menit, 09.00-15.00 WITA, Senin-Sabtu.");
     if(manual)toast("Data "+j.label+" dimuat");
   }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.");if(manual)toast("Gagal menarik data")}
 }
