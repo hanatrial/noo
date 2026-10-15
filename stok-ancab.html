@@ -96,6 +96,9 @@ nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);di
 .tab[aria-selected="true"]{color:#fff;border-top-color:var(--rack)}
 .tab[aria-selected="true"] .no{background:var(--rack);color:#1A0E05;border-color:var(--rack)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--graphite);color:var(--on-graphite);padding:9px 14px;border-radius:6px;font-size:13px;z-index:9;max-width:90vw}
+.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.adv{border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px;font-size:14px}
 code{font-family:var(--f-mono);font-size:.9em}
 #gate{position:fixed;inset:0;z-index:100;background:var(--graphite);color:var(--on-graphite);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 24px calc(32px + env(safe-area-inset-bottom,0px));text-align:center;overflow-y:auto}
 #gate .beam{position:absolute;top:0;left:0;right:0;height:8px;background:var(--rack)}
@@ -149,7 +152,7 @@ const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
 const BN={MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
-  cat:"TRADITIONAL",reg:"SULSEL",rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL"}))};
+  cat:"TRADITIONAL",reg:"SULSEL",open:{},rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL"}))};
 
 const $=s=>document.querySelector(s);
 const rowsC=()=>S.rows.filter(r=>r.cat===S.cat&&BRS().includes(r.b));
@@ -184,10 +187,10 @@ function compute(){
         if(need<=0)return;const q=Math.min(need,sur[sn]);if(q<1)return;
         sur[sn]-=q;sent[sn]+=q;need-=q;got+=q;
         const sd=m[sn];
-        moves.push({sku:o.sku,brand:o.brand,from:sn,to:b,q,sSoh:sd.soh,sAp:sd.ap,sInt:sd.int,sKey:sn+"|"+o.code+"|"+o.sku,
+        moves.push({code:o.code,sku:o.sku,brand:o.brand,from:sn,to:b,q,sSoh:sd.soh,sAp:sd.ap,sInt:sd.int,sKey:sn+"|"+o.code+"|"+o.sku,
           rSoh:o.soh,rAp:o.ap,rInt:o.int,rBefore:doi(o)});
       });
-      if(got<1)unmet.push({sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
+      if(got<1)unmet.push({code:o.code,sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
         why:allowed.map(x=>BN[x]).join(", ")+(allowed.length===1&&m[allowed[0]]&&m[allowed[0]].ap>0&&doi(m[allowed[0]])<S.keep?" sendiri tipis":" tidak punya kelebihan")});
     });
   });
@@ -234,15 +237,25 @@ function vData(){
   <p class="note">Hitungan memakai item aktif dengan penjualan AP3M di atas 0.</p>`;
 }
 
+function advice(r,moves,unmet){
+  const mv=moves.filter(m=>m.to===r.b&&m.code===r.code&&m.sku===r.sku);
+  if(mv.length)return mv.map(m=>`<div><b>Ambil ${f0(m.q)} ctn dari ${BN[m.from]}</b><br><span class="note">DOI ${BN[m.to]} ${f0(m.rBefore)} → ${f0(m.rAfter)} hari · ${BN[m.from]} ${m.sAp>0?"DOI "+f0(m.sBefore)+" → "+f0(m.sAfter):"tanpa penjualan"} (stok ${f1(m.sSoh)} ctn)${m.rInt>0?" · penerima ada intransit "+f0(m.rInt)+" ctn":""}</span></div>`).join("");
+  const u=unmet.find(x=>x.b===r.b&&x.code===r.code&&x.sku===r.sku);
+  if(u)return `<div><b>Belum bisa diancab</b><br><span class="note">${esc(u.why)}.${r.int>0?" Ada intransit "+f0(r.int)+" ctn.":""}</span></div>`;
+  if(r.st!=="AKTIF"&&!S.prun)return `<div><b>Tidak diancab</b><br><span class="note">Item ${esc(r.st)} tidak diikutkan. Nyalakan "Sertakan item PRUNNING" di tab Saran Ancab untuk memasukkannya.</span></div>`;
+  return `<div><b>Tidak ada saran Ancab</b><br><span class="note">Tidak ada cabang pengirim yang diizinkan untuk item ini.</span></div>`;
+}
 function vDoi(){
   const l=lowItems(S.br);
+  const {moves,unmet}=compute();
   const chips=LOWB().map(b=>`<button class="chip" data-br="${b}" aria-pressed="${b===S.br}">${BN[b]}<span class="n">${lowItems(b).length}</span></button>`).join("");
-  const cards=l.map(r=>{const d=doi(r);const out=r.soh<=0.05;
-    return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div><div class="brand">${esc(r.brand)}${r.st!=="AKTIF"?` · ${esc(r.st)}`:""}</div></div>
+  const cards=l.map(r=>{const d=doi(r);const out=r.soh<=0.05;const k=r.code+"|"+r.sku;const op=!!S.open[k];
+    return `<div class="card item tap" data-k="${esc(k)}" role="button" tabindex="0" aria-expanded="${op}"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div><div class="brand">${esc(r.brand)}${r.st!=="AKTIF"?` · ${esc(r.st)}`:""}</div></div>
       <div class="doi ${sev(d)}">${out?"0":f0(d)}<small>HARI DOI</small></div></div>
       ${meter(d)}
       <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b>/bln</span></div>
-      <div class="row">${out?'<span class="pill crit">Stok habis</span>':""}${intPill(r.int)}</div></div>`}).join("");
+      <div class="row">${out?'<span class="pill crit">Stok habis</span>':""}${intPill(r.int)}<span class="pill" style="margin-left:auto">Saran Ancab ${op?"▴":"▾"}</span></div>
+      ${op?`<div class="adv">${advice(r,moves,unmet)}</div>`:""}</div>`}).join("");
   return `
   <h2>Item DOI rendah</h2>
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
@@ -251,7 +264,7 @@ function vDoi(){
     <select id="sort" aria-label="Urutkan"><option value="ap" ${S.sort==="ap"?"selected":""}>AP3M tertinggi</option><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option></select>
     <label class="row note" style="gap:6px"><input type="checkbox" id="act" ${S.active?"checked":""}> Hanya aktif</label>
   </div>
-  <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Garis hitam pada bar menandai 30 hari.</div>
+  <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Garis hitam pada bar menandai 30 hari. Ketuk item untuk melihat saran Ancab.</div>
   <div class="stack">${cards||'<div class="card empty">Tidak ada item di bawah batas ini.</div>'}</div>`;
 }
 
@@ -307,6 +320,7 @@ function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHT
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
+  const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;refresh();return}
   if(e.target.id==="pull"){e.target.disabled=true;e.target.textContent="Menarik ...";pullLatest(true).finally(()=>{const b=$("#pull");if(b){b.disabled=false;b.textContent="Tarik data terbaru"}});return}
@@ -320,6 +334,7 @@ document.addEventListener("click",e=>{
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Ringkasan tersalin")).catch(()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Ringkasan tersalin")}catch(x){toast("Gagal menyalin")}ta.remove()});
   }
 });
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tap")){e.preventDefault();e.target.click()}});
 document.addEventListener("change",e=>{
   const id=e.target.id;
   if(id==="thr"){S.thr=Math.max(1,+e.target.value||30);refresh()}
