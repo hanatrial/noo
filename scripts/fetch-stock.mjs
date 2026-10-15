@@ -37,7 +37,7 @@ for (const r of a) {
   const cat = String(r[2] || "").trim().toUpperCase();
   if (b && (cat === "TRADITIONAL" || cat === "MODERN"))
     rows.push([b, String(r[4] || ""), String(r[6] || "").trim(), String(r[3] || "").trim(),
-      String(r[7] || "").trim().toUpperCase(), r2(r[11]), r2(r[13]), r2(r[23]), cat]);
+      String(r[7] || "").trim().toUpperCase(), r2(r[11]), r2(r[13]), r2(r[23]), cat, Math.round(+r[24] || 0), Math.round(+r[12] || 0)]);
 }
 if (rows.length < 100) throw new Error("Baris terlalu sedikit (" + rows.length + "), file mungkin berubah format");
 

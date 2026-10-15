@@ -152,7 +152,7 @@ const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
 const BN={MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
-  cat:"TRADITIONAL",reg:"SULSEL",open:{},rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL"}))};
+  cat:"TRADITIONAL",reg:"SULSEL",open:{},rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
 
 const $=s=>document.querySelector(s);
 const rowsC=()=>S.rows.filter(r=>r.cat===S.cat&&BRS().includes(r.b));
@@ -160,6 +160,7 @@ function fixBr(){const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const f1=n=>n.toLocaleString("id-ID",{maximumFractionDigits:1});
 const f0=n=>Math.round(n).toLocaleString("id-ID");
+const fRp=n=>{n=Math.round(n||0);if(n>=1e9)return "Rp "+(n/1e9).toLocaleString("id-ID",{maximumFractionDigits:2})+" M";if(n>=1e6)return "Rp "+(n/1e6).toLocaleString("id-ID",{maximumFractionDigits:1})+" jt";return "Rp "+Math.round(n/1e3).toLocaleString("id-ID")+" rb"};
 const doi=r=>r.ap>0?r.soh/r.ap*30:null;
 const sev=d=>d<15?"crit":"warn";
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
@@ -167,7 +168,7 @@ function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeou
 /* Item DOI rendah per cabang */
 function lowItems(b){
   return rowsC().filter(r=>r.b===b&&(!S.active||r.st==="AKTIF")&&r.ap>0&&doi(r)<S.thr)
-    .sort((x,y)=>S.sort==="doi"?doi(x)-doi(y)||y.ap-x.ap:y.ap-x.ap);
+    .sort((x,y)=>S.sort==="doi"?doi(x)-doi(y)||y.ap-x.ap:(y.apv-x.apv)||(y.ap-x.ap));
 }
 
 /* Hitung saran Ancab menurut rute wilayah (Sulsel: hub Makassar; Manado-Gorontalo: Manado ke Gorontalo), pengirim sisa >= keep hari, penerima +add hari */
@@ -188,9 +189,9 @@ function compute(){
         sur[sn]-=q;sent[sn]+=q;need-=q;got+=q;
         const sd=m[sn];
         moves.push({code:o.code,sku:o.sku,brand:o.brand,from:sn,to:b,q,sSoh:sd.soh,sAp:sd.ap,sInt:sd.int,sKey:sn+"|"+o.code+"|"+o.sku,
-          rSoh:o.soh,rAp:o.ap,rInt:o.int,rBefore:doi(o)});
+          rSoh:o.soh,rAp:o.ap,rInt:o.int,rBefore:doi(o),v:q*(o.ap>0?o.apv/o.ap:0)});
       });
-      if(got<1)unmet.push({code:o.code,sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
+      if(got<1)unmet.push({apv:o.apv,code:o.code,sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
         why:allowed.map(x=>BN[x]).join(", ")+(allowed.length===1&&m[allowed[0]]&&m[allowed[0]].ap>0&&doi(m[allowed[0]])<S.keep?" sendiri tipis":" tidak punya kelebihan")});
     });
   });
@@ -253,7 +254,7 @@ function vDoi(){
     return `<div class="card item tap" data-k="${esc(k)}" role="button" tabindex="0" aria-expanded="${op}"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div><div class="brand">${esc(r.brand)}${r.st!=="AKTIF"?` · ${esc(r.st)}`:""}</div></div>
       <div class="doi ${sev(d)}">${out?"0":f0(d)}<small>HARI DOI</small></div></div>
       ${meter(d)}
-      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b>/bln</span></div>
+      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${fRp(r.apv)}</b>/bln</span><span><b>${f1(r.ap)}</b> ctn/bln</span></div>
       <div class="row">${out?'<span class="pill crit">Stok habis</span>':""}${intPill(r.int)}<span class="pill" style="margin-left:auto">Saran Ancab ${op?"▴":"▾"}</span></div>
       ${op?`<div class="adv">${advice(r,moves,unmet)}</div>`:""}</div>`}).join("");
   return `
@@ -261,7 +262,7 @@ function vDoi(){
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
   <div class="row" style="margin-block:12px">
     <label class="note" for="thr">DOI di bawah</label><input type="number" id="thr" value="${S.thr}" min="1" max="120" inputmode="numeric"><span class="note">hari</span>
-    <select id="sort" aria-label="Urutkan"><option value="ap" ${S.sort==="ap"?"selected":""}>AP3M tertinggi</option><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option></select>
+    <select id="sort" aria-label="Urutkan"><option value="ap" ${S.sort==="ap"?"selected":""}>AP3M tertinggi (Rp)</option><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option></select>
     <label class="row note" style="gap:6px"><input type="checkbox" id="act" ${S.active?"checked":""}> Hanya aktif</label>
   </div>
   <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Garis hitam pada bar menandai 30 hari. Ketuk item untuk melihat saran Ancab.</div>
@@ -279,20 +280,20 @@ function vAncab(){
     const sNote=m.sAp>0?`<span>Pengirim DOI <b>${f0(m.sBefore)}→${f0(m.sAfter)}</b></span>`:`<span>Pengirim tanpa penjualan</span>`;
     return `<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
       <div style="min-width:0"><div class="name">${esc(m.sku)}</div>
-      <div class="route">${f1(m.rSoh)} ctn di penerima</div></div></div>
+      <div class="route">≈ <b>${fRp(m.v)}</b> · stok penerima ${f1(m.rSoh)} ctn</div></div></div>
       <div class="facts"><span>Penerima DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b></span>${sNote}</div>
       <div class="row">${intNote}${m.sInt>0?`<span class="pill muted">Pengirim ada intransit ${f0(m.sInt)}</span>`:""}</div></div>`};
-  const grp=(list,key,dir)=>BRS().filter(b=>list.some(m=>m[key]===b)).map(b=>{const g=list.filter(m=>m[key]===b).sort((x,y)=>y.q-x.q);
-    return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><span class="lbl" style="font-size:15px;color:var(--ink)">ANCAB ${dir==="in"?"DARI":"KE"} ${BN[b].toUpperCase()}</span><span class="pill">${g.length} item · ${f0(g.reduce((s,x)=>s+x.q,0))} ctn</span></div><div class="stack">${g.map(m=>card(m,dir)).join("")}</div>`}).join("");
-  const um=unmet.filter(u=>u.b===S.br).sort((a,c)=>c.ap-a.ap);
+  const grp=(list,key,dir)=>BRS().filter(b=>list.some(m=>m[key]===b)).map(b=>{const g=list.filter(m=>m[key]===b).sort((x,y)=>(y.v-x.v)||(y.q-x.q));
+    return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><span class="lbl" style="font-size:15px;color:var(--ink)">ANCAB ${dir==="in"?"DARI":"KE"} ${BN[b].toUpperCase()}</span><span class="pill">${g.length} item · ${f0(g.reduce((s,x)=>s+x.q,0))} ctn · ${fRp(g.reduce((s,x)=>s+x.v,0))}</span></div><div class="stack">${g.map(m=>card(m,dir)).join("")}</div>`}).join("");
+  const um=unmet.filter(u=>u.b===S.br).sort((a,c)=>(c.apv-a.apv)||(c.ap-a.ap));
   const umHtml=um.map(u=>`<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(u.sku)}</div><div class="brand">${esc(u.why)}</div></div><div class="doi ${sev(u.d)}">${u.soh<=0.05?"0":f0(u.d)}<small>HARI DOI</small></div></div>
-    <div class="row">${intPill(u.int)}<span class="facts"><span>AP3M <b>${f1(u.ap)}</b>/bln</span></span></div></div>`).join("");
+    <div class="row">${intPill(u.int)}<span class="facts"><span>AP3M <b>${fRp(u.apv)}</b>/bln</span><span><b>${f1(u.ap)}</b> ctn/bln</span></span></div></div>`).join("");
   return `
   <h2>Saran Ancab</h2>
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
   <div class="card" style="margin-block:12px"><div class="grid2">
-    <div class="stat"><span class="v">${f0(sum(inn))}</span><span class="k">ctn diterima · ${inn.length} item</span></div>
-    <div class="stat"><span class="v">${f0(sum(out))}</span><span class="k">ctn dikirim · ${out.length} item</span></div></div>
+    <div class="stat"><span class="v">${f0(sum(inn))}</span><span class="k">ctn diterima · ${inn.length} item · ≈ ${fRp(inn.reduce((s,x)=>s+x.v,0))}</span></div>
+    <div class="stat"><span class="v">${f0(sum(out))}</span><span class="k">ctn dikirim · ${out.length} item · ≈ ${fRp(out.reduce((s,x)=>s+x.v,0))}</span></div></div>
     <p class="note" style="margin:10px 0 0">${RG().rule} Pengirim tetap punya minimal <b>${S.keep}</b> hari, penerima ditambah maksimal <b>${S.add}</b> hari. Intransit tidak dihitung sebagai stok.</p>
     <div class="row" style="margin-top:10px">
       <label class="note" for="keep">Sisa pengirim</label><input type="number" id="keep" value="${S.keep}" min="0" max="120" inputmode="numeric">
@@ -363,7 +364,7 @@ async function loadFile(f){
       const cat=String(r[2]||"").trim().toUpperCase();
       if(b&&(cat==="TRADITIONAL"||cat==="MODERN"))
         rows.push({b,code:String(r[4]||""),sku:String(r[6]||"").trim(),brand:String(r[3]||"").trim(),st:String(r[7]||"").trim().toUpperCase(),
-          soh:+r[11]||0,int:+r[13]||0,ap:+r[23]||0,cat})});
+          soh:+r[11]||0,int:+r[13]||0,ap:+r[23]||0,cat,apv:+r[24]||0,sohv:+r[12]||0})});
     if(!rows.length){msg.textContent="Tidak ada baris Traditional atau Modern untuk 4 cabang. Pastikan ini file Update Stock Nutrifood.";return}
     let label=f.name.replace(/\.[^.]+$/,"");
     for(let i=0;i<5&&i<a.length;i++){const t=String(a[i][1]||"");const m=t.match(/Stock Nutrifood\s+(.+)/i);if(m){label=m[1].trim();break}}
@@ -380,7 +381,7 @@ async function pullLatest(manual){
     if(!r.ok)throw new Error(r.status);
     const j=await r.json();
     if(!j.rows||!j.rows.length)throw new Error("kosong");
-    S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:a[8]||"TRADITIONAL"}));
+    S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:a[8]||"TRADITIONAL",apv:a[9]||0,sohv:a[10]||0}));
     S.label=j.label;S.src=j.src;
     S.mod=new Date(j.modified).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" WITA";
     refresh();set((manual?"Ditarik ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+". Server mengecek Nextcloud tiap 10 menit.");
