@@ -191,7 +191,7 @@ function compute(){
         moves.push({code:o.code,sku:o.sku,brand:o.brand,from:sn,to:b,q,sSoh:sd.soh,sAp:sd.ap,sInt:sd.int,sKey:sn+"|"+o.code+"|"+o.sku,
           rSoh:o.soh,rAp:o.ap,rInt:o.int,rBefore:doi(o),v:q*(o.ap>0?o.apv/o.ap:0)});
       });
-      if(got<1)unmet.push({apv:o.apv,code:o.code,sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
+      if(got<1)unmet.push({srcInt:allowed.filter(x=>m[x]).map(x=>({b:x,int:m[x].int})),apv:o.apv,code:o.code,sku:o.sku,brand:o.brand,b,soh:o.soh,ap:o.ap,int:o.int,d:doi(o),
         why:allowed.map(x=>BN[x]).join(", ")+(allowed.length===1&&m[allowed[0]]&&m[allowed[0]].ap>0&&doi(m[allowed[0]])<S.keep?" sendiri tipis":" tidak punya kelebihan")});
     });
   });
@@ -240,9 +240,9 @@ function vData(){
 
 function advice(r,moves,unmet){
   const mv=moves.filter(m=>m.to===r.b&&m.code===r.code&&m.sku===r.sku);
-  if(mv.length)return mv.map(m=>`<div><b>Ambil ${f0(m.q)} ctn dari ${BN[m.from]}</b><br><span class="note">DOI ${BN[m.to]} ${f0(m.rBefore)} → ${f0(m.rAfter)} hari · ${BN[m.from]} ${m.sAp>0?"DOI "+f0(m.sBefore)+" → "+f0(m.sAfter):"tanpa penjualan"} (stok ${f1(m.sSoh)} ctn)${m.rInt>0?" · penerima ada intransit "+f0(m.rInt)+" ctn":""}</span></div>`).join("");
+  if(mv.length)return mv.map(m=>`<div><b>Ambil ${f0(m.q)} ctn dari ${BN[m.from]}</b><br><span class="note">DOI ${BN[m.to]} ${f0(m.rBefore)} → ${f0(m.rAfter)} hari · ${BN[m.from]} ${m.sAp>0?"DOI "+f0(m.sBefore)+" → "+f0(m.sAfter):"tanpa penjualan"} (stok ${f1(m.sSoh)} ctn)</span><br>${m.sInt>0?`<span class="pill warn">Pengirim ada intransit ${f0(m.sInt)} ctn</span>`:`<span class="pill muted">Pengirim tanpa intransit</span>`}</div>`).join("");
   const u=unmet.find(x=>x.b===r.b&&x.code===r.code&&x.sku===r.sku);
-  if(u)return `<div><b>Belum bisa diancab</b><br><span class="note">${esc(u.why)}.${r.int>0?" Ada intransit "+f0(r.int)+" ctn.":""}</span></div>`;
+  if(u)return `<div><b>Belum bisa diancab</b><br><span class="note">${esc(u.why)}.</span><br>${u.srcInt.length?u.srcInt.map(s=>s.int>0?`<span class="pill warn">${BN[s.b]} ada intransit ${f0(s.int)} ctn</span>`:`<span class="pill muted">${BN[s.b]} tanpa intransit</span>`).join(" "):""}</div>`;
   if(r.st!=="AKTIF"&&!S.prun)return `<div><b>Tidak diancab</b><br><span class="note">Item ${esc(r.st)} tidak diikutkan. Nyalakan "Sertakan item PRUNNING" di tab Saran Ancab untuk memasukkannya.</span></div>`;
   return `<div><b>Tidak ada saran Ancab</b><br><span class="note">Tidak ada cabang pengirim yang diizinkan untuk item ini.</span></div>`;
 }
