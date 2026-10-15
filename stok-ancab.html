@@ -101,7 +101,6 @@ const BN={MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"doi",keep:30,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
   rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7]}))};
-try{const sv=JSON.parse(localStorage.getItem("ancab_data")||"null");if(sv&&sv.rows&&sv.rows.length){S.rows=sv.rows;S.label=sv.label;S.src=sv.src;S.mod="diunggah";}}catch(e){}
 
 const $=s=>document.querySelector(s);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -160,9 +159,10 @@ function vData(){
   return `
   <h2>Sumber data</h2>
   <div class="card stack">
-    <div><div class="lbl">File terbaru</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(S.src)}</div>
-      <div class="note">Modified ${esc(S.mod)} · ${S.rows.length} baris Traditional (4 cabang)</div></div>
-    <label class="btn" for="file" style="text-align:center;display:block">Pilih file stok terbaru (.xlsb / .xlsx)</label>
+    <div><div class="lbl">${S.mod==="diunggah"?"File yang dipilih":"File terbaru di Nextcloud"}</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(S.src)}</div>
+      <div class="note">${S.mod==="diunggah"?"Diunggah manual":"Modified "+esc(S.mod)} · ${S.rows.length} baris Traditional (4 cabang)</div></div>
+    <div class="note" id="auto">Mengecek file terbaru ...</div>
+    <label class="btn ghost" for="file" style="text-align:center;display:block">Atau pilih file dari HP (.xlsb / .xlsx)</label>
     <input type="file" id="file" accept=".xlsb,.xlsx,.xlsm" hidden>
     <div id="msg" class="note"></div>
     ${S.mod==="diunggah"?`<button class="btn ghost" id="reset">Kembali ke data bawaan (${esc(SNAP.label)})</button>`:""}
@@ -170,11 +170,11 @@ function vData(){
   <h2>Cara tarik data terbaru</h2>
   <div class="card">
     <ol class="steps">
-      <li><a href="${SHARE}" target="_blank" rel="noopener">Buka folder NUTRIFOOD</a></li>
-      <li>Pilih file dengan kolom <b>Modified</b> paling baru, bukan yang namanya paling akhir.</li>
-      <li>Download, lalu pilih file itu pada tombol di atas.</li>
+      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 30 menit pada jam kerja.</li>
+      <li>File dengan kolom <b>Modified</b> paling baru yang dipakai, bukan yang namanya paling akhir.</li>
+      <li>Hasilnya dimuat otomatis saat halaman dibuka. Pilih file manual hanya jika perlu data yang lebih baru dari itu.</li>
     </ol>
-    <p class="note" style="margin:10px 0 0">Halaman ini tidak bisa mengambil langsung dari link tersebut, jadi file dipilih manual. Hasil perhitungan langsung berubah mengikuti file yang kamu pilih.</p>
+    <p class="note" style="margin:10px 0 0">Nextcloud tidak mengizinkan browser membaca langsung, jadi pembacaan dilakukan di server lalu disimpan sebagai <code>stok-data.json</code>.</p>
   </div>
   <h2>Ringkasan cepat</h2>
   <div class="grid2">${tiles}</div>
@@ -247,7 +247,7 @@ function refresh(){const y=window.scrollY;$("#stamp").textContent=S.label;$("#vi
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;refresh();return}
-  if(e.target.id==="reset"){try{localStorage.removeItem("ancab_data")}catch(x){}location.reload();return}
+  if(e.target.id==="reset"){location.reload();return}
   if(e.target.id==="copy"){
     const {moves}=compute();const L=[`Ancab ${BN[S.br]} (data ${S.label})`];
     const inn=moves.filter(m=>m.to===S.br),out=moves.filter(m=>m.from===S.br);
@@ -288,9 +288,22 @@ async function loadFile(f){
     let label=f.name.replace(/\.[^.]+$/,"");
     for(let i=0;i<5&&i<a.length;i++){const t=String(a[i][1]||"");const m=t.match(/Stock Nutrifood\s+(.+)/i);if(m){label=m[1].trim();break}}
     S.rows=rows;S.label=label;S.src=f.name;S.mod="diunggah";
-    try{localStorage.setItem("ancab_data",JSON.stringify({rows,label,src:f.name}))}catch(x){}
     render();toast("Data "+label+" dimuat: "+rows.length+" baris");
   }catch(err){msg.textContent="Gagal membaca file: "+(err&&err.message?err.message:err)}
 }
 render();
+/* Muat data terbaru hasil tarikan server (stok-data.json) */
+(async function(){
+  const set=t=>{const el=$("#auto");if(el)el.textContent=t};
+  try{
+    const r=await fetch("stok-data.json?t="+Date.now(),{cache:"no-store"});
+    if(!r.ok)throw new Error(r.status);
+    const j=await r.json();
+    if(!j.rows||!j.rows.length)throw new Error("kosong");
+    S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7]}));
+    S.label=j.label;S.src=j.src;
+    S.mod=new Date(j.modified).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" WITA";
+    refresh();set("Data terbaru dimuat otomatis.");
+  }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.")}
+})();
 </script>
