@@ -98,7 +98,7 @@ const SNAP={label:"15 Oktober 2026",file:"Update Stock Nutrifood 15 Oktober 2026
 const SHARE="https://bench.borwita.co.id/index.php/s/wSaQw8zZ6MPPy29";
 const BR=["MAKASSAR","BONE","PAREPARE","PALOPO"];
 const BN={MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
-const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"doi",keep:30,add:30,
+const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",keep:30,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
   rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7]}))};
 
@@ -196,7 +196,7 @@ function vDoi(){
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
   <div class="row" style="margin-block:12px">
     <label class="note" for="thr">DOI di bawah</label><input type="number" id="thr" value="${S.thr}" min="1" max="120" inputmode="numeric"><span class="note">hari</span>
-    <select id="sort" aria-label="Urutkan"><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option><option value="ap" ${S.sort==="ap"?"selected":""}>Penjualan terbesar</option></select>
+    <select id="sort" aria-label="Urutkan"><option value="ap" ${S.sort==="ap"?"selected":""}>AP3M tertinggi</option><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option></select>
     <label class="row note" style="gap:6px"><input type="checkbox" id="act" ${S.active?"checked":""}> Hanya aktif</label>
   </div>
   <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Garis hitam pada bar menandai 30 hari.</div>
