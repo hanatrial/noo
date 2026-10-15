@@ -161,6 +161,7 @@ function vData(){
   <div class="card stack">
     <div><div class="lbl">${S.mod==="diunggah"?"File yang dipilih":"File terbaru di Nextcloud"}</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(S.src)}</div>
       <div class="note">${S.mod==="diunggah"?"Diunggah manual":"Modified "+esc(S.mod)} · ${S.rows.length} baris Traditional (4 cabang)</div></div>
+    <button class="btn" id="pull" type="button">Tarik data terbaru</button>
     <div class="note" id="auto">Mengecek file terbaru ...</div>
     <label class="btn ghost" for="file" style="text-align:center;display:block">Atau pilih file dari HP (.xlsb / .xlsx)</label>
     <input type="file" id="file" accept=".xlsb,.xlsx,.xlsm" hidden>
@@ -170,7 +171,7 @@ function vData(){
   <h2>Cara tarik data terbaru</h2>
   <div class="card">
     <ol class="steps">
-      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 30 menit pada jam kerja.</li>
+      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 10 menit pada jam kerja.</li>
       <li>File dengan kolom <b>Modified</b> paling baru yang dipakai, bukan yang namanya paling akhir.</li>
       <li>Hasilnya dimuat otomatis saat halaman dibuka. Pilih file manual hanya jika perlu data yang lebih baru dari itu.</li>
     </ol>
@@ -247,6 +248,7 @@ function refresh(){const y=window.scrollY;$("#stamp").textContent=S.label;$("#vi
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;refresh();return}
+  if(e.target.id==="pull"){e.target.disabled=true;e.target.textContent="Menarik ...";pullLatest(true).finally(()=>{const b=$("#pull");if(b){b.disabled=false;b.textContent="Tarik data terbaru"}});return}
   if(e.target.id==="reset"){location.reload();return}
   if(e.target.id==="copy"){
     const {moves}=compute();const L=[`Ancab ${BN[S.br]} (data ${S.label})`];
@@ -293,7 +295,7 @@ async function loadFile(f){
 }
 render();
 /* Muat data terbaru hasil tarikan server (stok-data.json) */
-(async function(){
+async function pullLatest(manual){
   const set=t=>{const el=$("#auto");if(el)el.textContent=t};
   try{
     const r=await fetch("stok-data.json?t="+Date.now(),{cache:"no-store"});
@@ -303,7 +305,9 @@ render();
     S.rows=j.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7]}));
     S.label=j.label;S.src=j.src;
     S.mod=new Date(j.modified).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" WITA";
-    refresh();set("Data terbaru dimuat otomatis.");
-  }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.")}
-})();
+    refresh();set((manual?"Ditarik ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+". Server mengecek Nextcloud tiap 10 menit.");
+    if(manual)toast("Data "+j.label+" dimuat");
+  }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.");if(manual)toast("Gagal menarik data")}
+}
+pullLatest(false);
 </script>
