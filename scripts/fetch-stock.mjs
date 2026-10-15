@@ -34,9 +34,10 @@ const r2 = n => Math.round((+n || 0) * 100) / 100;
 const rows = [];
 for (const r of a) {
   const b = map[String(r[1] || "").trim().toUpperCase()];
-  if (b && String(r[2] || "").trim().toUpperCase() === "TRADITIONAL")
+  const cat = String(r[2] || "").trim().toUpperCase();
+  if (b && (cat === "TRADITIONAL" || cat === "MODERN"))
     rows.push([b, String(r[4] || ""), String(r[6] || "").trim(), String(r[3] || "").trim(),
-      String(r[7] || "").trim().toUpperCase(), r2(r[11]), r2(r[13]), r2(r[23])]);
+      String(r[7] || "").trim().toUpperCase(), r2(r[11]), r2(r[13]), r2(r[23]), cat]);
 }
 if (rows.length < 100) throw new Error("Baris terlalu sedikit (" + rows.length + "), file mungkin berubah format");
 
