@@ -238,7 +238,7 @@ function vData(){
   <h2>Cara tarik data terbaru</h2>
   <div class="card">
     <ol class="steps">
-      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 10 menit, 09.00-15.00 WITA, Senin sampai Sabtu, dan berhenti setelah file bertanggal hari itu didapat.</li>
+      <li>Server membaca folder <a href="${SHARE}" target="_blank" rel="noopener">NUTRIFOOD</a> tiap 10 menit, 04.00-15.00 WITA, Senin sampai Sabtu, dan berhenti setelah file bertanggal hari itu didapat.</li>
       <li>File dengan kolom <b>Modified</b> paling baru yang dipakai, bukan yang namanya paling akhir.</li>
       <li>Hasilnya dimuat otomatis saat halaman dibuka. Pilih file manual hanya jika perlu data yang lebih baru dari itu.</li>
     </ol>
@@ -466,7 +466,7 @@ async function pullLatest(manual){
     const mm=String(j.label||"").match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
     const lbl=mm&&bln[mm[2].toLowerCase()]?mm[3]+"-"+String(bln[mm[2].toLowerCase()]).padStart(2,"0")+"-"+mm[1].padStart(2,"0"):null;
     const hariIni=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
-    set((manual?"Dimuat ulang ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+" dari stok-data.json (tidak menghubungi Nextcloud). "+(lbl===hariIni?"File tanggal hari ini sudah didapat, server tidak mengecek Nextcloud lagi.":"Server mengecek Nextcloud tiap 10 menit, 09.00-15.00 WITA, Senin-Sabtu, sampai file tanggal hari ini ada."));
+    set((manual?"Dimuat ulang ":"Dimuat otomatis ")+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+" dari stok-data.json (tidak menghubungi Nextcloud). "+(lbl===hariIni?"File tanggal hari ini sudah didapat, server tidak mengecek Nextcloud lagi.":"Server mengecek Nextcloud tiap 10 menit, 04.00-15.00 WITA, Senin-Sabtu, sampai file tanggal hari ini ada."));
     if(manual)toast("Data "+j.label+" dimuat");
   }catch(e){set("Pakai data bawaan "+SNAP.label+". Data otomatis belum tersedia.");if(manual)toast("Gagal menarik data")}
 }

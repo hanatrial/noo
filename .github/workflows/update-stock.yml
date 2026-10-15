@@ -2,9 +2,10 @@ name: Update data stok
 
 on:
   schedule:
-    # WITA = UTC+8. 09.00-15.00 WITA = 01.00-07.00 UTC, Senin-Sabtu (tanpa Minggu)
-    - cron: "*/10 1-6 * * 1-6"
-    - cron: "0 7 * * 1-6"
+    # WITA = UTC+8. Mulai lebih awal (04.00 WITA) karena GitHub sering menunda jadwal beberapa jam. Senin-Sabtu WITA, selesai 15.00 WITA.
+    - cron: "*/10 20-23 * * 0-5"   # 04.00-07.50 WITA (hari UTC sebelumnya)
+    - cron: "*/10 0-6 * * 1-6"     # 08.00-14.50 WITA
+    - cron: "0 7 * * 1-6"          # 15.00 WITA
   workflow_dispatch:
 
 permissions:
