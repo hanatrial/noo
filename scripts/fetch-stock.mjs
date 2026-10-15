@@ -29,7 +29,7 @@ const ws = wb.Sheets["Update Stock"];
 if (!ws) throw new Error("Sheet 'Update Stock' tidak ada");
 const a = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
 
-const map = { "MAKASSAR": "MAKASSAR", "BONE": "BONE", "PARE-PARE": "PAREPARE", "PAREPARE": "PAREPARE", "PALOPO": "PALOPO" };
+const map = { "MAKASSAR": "MAKASSAR", "BONE": "BONE", "PARE-PARE": "PAREPARE", "PAREPARE": "PAREPARE", "PALOPO": "PALOPO", "MANADO": "MANADO", "GORONTALO": "GORONTALO" };
 const r2 = n => Math.round((+n || 0) * 100) / 100;
 const rows = [];
 for (const r of a) {

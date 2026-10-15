@@ -1,7 +1,7 @@
 {
-  "name": "Stok Traditional Sulsel",
-  "short_name": "Stok Sulsel",
-  "description": "DOI rendah dan saran Ancab Makassar, Bone, Parepare, Palopo",
+  "name": "Stok BCP",
+  "short_name": "Stok BCP",
+  "description": "DOI rendah dan saran Ancab antar cabang BCP",
   "start_url": "./stok-ancab.html",
   "scope": "./",
   "display": "standalone",
