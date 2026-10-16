@@ -22,7 +22,7 @@ textarea{min-height:130px;resize:vertical;}
 .themes button.on{border-color:#fff;}
 button.go{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;}
 .prev{display:grid;place-items:center;}
-canvas{width:100%;max-width:280px;aspect-ratio:9/19.5;border-radius:26px;border:2px solid var(--line);background:#000;}
+canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2px solid var(--line);background:#000;}
 .hint{font-size:13px;color:var(--mute);line-height:1.5;}
 </style>
 </head>
@@ -45,17 +45,17 @@ Hilo School Original | Sejahtera Bulukumba</textarea>
           <input id="when" value="sekarang" maxlength="14">
         </label>
         <label>Posisi kartu
-          <select id="pos"><option value="0.3">Tengah</option><option value="0.45">Bawah</option><option value="0.18">Atas</option></select>
+          <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
         </label>
       </div>
       <label>Warna latar
         <div class="themes" id="themes"></div>
       </label>
       <button class="go" id="dl">Unduh PNG</button>
-      <div class="hint">Android: buka file hasil unduhan di Galeri → ⋮ → <b>Setel sebagai wallpaper</b> → <b>Layar kunci</b>. Jam asli HP tampil di atas, kartunya ditaruh di bawah jam.</div>
+      <div class="hint">Android: buka file hasil unduhan di Galeri → ⋮ → <b>Setel sebagai wallpaper</b> → <b>Layar kunci</b>. Jam besar HP tampil di atas (sampai sekitar 38% layar), kartu ditaruh di bawahnya.</div>
     </div>
   </div>
-  <div class="prev"><canvas id="cv" width="1080" height="2340"></canvas></div>
+  <div class="prev"><canvas id="cv" width="1080" height="2400"></canvas></div>
 </div>
 
 <script>
