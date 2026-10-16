@@ -32,6 +32,7 @@ button.add{background:var(--accent);color:#231a00;font-weight:700;border:0;borde
 .ev .t small{display:block;color:var(--mute);font-weight:400;font-size:12px;margin-top:2px;}
 .ev button{background:#1f8a5b;color:#fff;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
 .none{color:var(--mute);font-size:13px;text-align:center;padding:6px 0;}
+button.go.alt{background:transparent;color:var(--text);border:1px solid var(--line);}
 .prev{display:grid;place-items:center;}
 canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2px solid var(--line);background:#000;}
 .hint{font-size:13px;color:var(--mute);line-height:1.5;}
@@ -59,7 +60,9 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
       <label>Warna latar
         <div class="themes" id="themes"></div>
       </label>
-      <button class="go" id="dl">Unduh PNG</button>
+      <button class="go" id="share">Bagikan ke Galeri</button>
+      <button class="go alt" id="dl">Unduh PNG</button>
+      <div class="hint" id="shareMsg"></div>
       <div class="hint">Android: buka file hasil unduhan di Galeri → ⋮ → <b>Setel sebagai wallpaper</b> → <b>Layar kunci</b>. Jam besar HP tampil di atas (sampai sekitar 38% layar), kartu ditaruh di bawahnya.</div>
     </div>
   </div>
@@ -218,11 +221,30 @@ function draw(){
 }
 $('pos').addEventListener('input', draw);
 
-$('dl').addEventListener('click', ()=>{
+function download(){
   const a = document.createElement('a');
   a.download = 'wallpaper-reminder.png';
   a.href = cv.toDataURL('image/png');
   a.click();
+}
+$('dl').addEventListener('click', download);
+
+$('share').addEventListener('click', ()=>{
+  const msg = $('shareMsg');
+  cv.toBlob(async blob=>{
+    const file = new File([blob], 'wallpaper-reminder.png', {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:'Wallpaper Reminder'});
+        msg.textContent = 'Pilih Galeri/Foto, lalu ⋮ → Setel sebagai wallpaper → Layar kunci.';
+      }catch(e){
+        if(e.name !== 'AbortError') msg.textContent = 'Gagal membagikan: ' + e.message;
+      }
+    }else{
+      msg.textContent = 'Browser ini tidak mendukung bagikan file, gambar diunduh saja.';
+      download();
+    }
+  }, 'image/png');
 });
 renderEvents();
 draw();
