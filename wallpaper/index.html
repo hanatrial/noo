@@ -88,19 +88,18 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:1p
 
 <script>
 const THEMES = [
-  {bg:['#0b3d2e','#1f8a5b'], blobs:['#7dffb2','#d4ff8a']},
-  {bg:['#134e5e','#71b280'], blobs:['#c6ffdd','#8affd0']},
-  {bg:['#052e1c','#0f6b3f'], blobs:['#34d399','#a7f3d0']},
-  {bg:['#1b4332','#52b788'], blobs:['#d8f3dc','#95d5b2']},
-  {bg:['#14532d','#4ade80'], blobs:['#bbf7d0','#facc15']},
-  {bg:['#022c22','#115e59'], blobs:['#5eead4','#86efac']}
+  {bg:'#0c0e08', accent:'#c8e84e', b1:'#a8e33c', b2:'#c8e84e'},
+  {bg:'#08110d', accent:'#7dffb2', b1:'#34d399', b2:'#7dffb2'},
+  {bg:'#081112', accent:'#5eead4', b1:'#22d3ee', b2:'#5eead4'},
+  {bg:'#100f07', accent:'#ffd24a', b1:'#f2c14e', b2:'#ffd24a'},
+  {bg:'#0d0a0a', accent:'#ff9c6e', b1:'#ff7a59', b2:'#ffb27a'}
 ];
 let theme = 0;
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-$('themes').innerHTML = THEMES.map((t,i)=>`<button data-i="${i}" style="background:linear-gradient(135deg,${t.bg[0]},${t.bg[1]})" class="${i===0?'on':''}" aria-label="Tema ${i+1}"></button>`).join('');
+$('themes').innerHTML = THEMES.map((t,i)=>`<button data-i="${i}" style="background:linear-gradient(135deg,${t.accent},${t.bg})" class="${i===0?'on':''}" aria-label="Tema ${i+1}"></button>`).join('');
 $('themes').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   theme = +b.dataset.i;
@@ -201,80 +200,138 @@ function rr(x,y,w,h,r){
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
 }
-function wrap(text, maxW){
-  const words = text.split(/\s+/), lines = []; let cur = '';
-  for(const w of words){
-    const test = cur ? cur+' '+w : w;
-    if(ctx.measureText(test).width > maxW && cur){ lines.push(cur); cur = w; } else cur = test;
-  }
-  if(cur) lines.push(cur);
-  return lines;
-}
 
-function background(t){
+function hexA(hex,a){
+  const n = parseInt(hex.slice(1),16), r = (n>>16)&255, g = (n>>8)&255, b = n&255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+function drawBg(t){
   const W = cv.width, H = cv.height;
-  const g = ctx.createLinearGradient(0,0,W,H);
-  g.addColorStop(0,t.bg[0]); g.addColorStop(1,t.bg[1]);
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,t.bg); g.addColorStop(1,'#070906');
   ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  [[0.15,0.2,700,t.blobs[0]],[0.9,0.75,800,t.blobs[1]]].forEach(([px,py,r,c])=>{
-    const rg = ctx.createRadialGradient(W*px,H*py,0,W*px,H*py,r);
-    rg.addColorStop(0,c+'cc'); rg.addColorStop(1,c+'00');
+  const blobs = [[W*0.20,H*0.10,560,t.b1,0.55],[W*1.04,H*0.84,820,t.b2,0.5],[W*0.02,H*1.0,540,t.b1,0.32]];
+  for(const [x,y,r,c,a] of blobs){
+    const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0,hexA(c,a)); rg.addColorStop(1,hexA(c,0));
     ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
-  });
+  }
+}
+function weeksInMonth(y,m){
+  const first = new Date(y,m,1), lead = (first.getDay()+6)%7, days = new Date(y,m+1,0).getDate();
+  return Math.ceil((lead+days)/7);
+}
+function fitFont(text, maxW, weight, size){
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  while(ctx.measureText(text).width > maxW && size > 18){ size -= 2; ctx.font = `${weight} ${size}px ${FONT}`; }
+  return size;
 }
 
 function draw(){
-  const t = THEMES[theme], W = cv.width, H = cv.height;
-  background(t);
+  const t = THEMES[theme], W = cv.width, H = cv.height, mx = 80;
+  drawBg(t);
 
-  // lebih dari 4 event: mode ringkas (tanggal sejajar di kanan judul)
-  const compact = events.length > 4;
-  if(!events.length) return;
-  const mx = 48, pad = compact ? 30 : 44, gap = compact ? 16 : 26, tlh = 66;
-  const startY = H * +$('pos').value;
-  const maxY = H * 0.9;
+  const today = todayISO();
+  const list = byDate();
+  const up = list.find(e=> e.date && e.date >= today);
+  const base = (up && up.date) || today;
+  const vy = +base.slice(0,4), vm = +base.slice(5,7) - 1;
 
-  // tata letak dalam koordinat "virtual" selebar 1/k kali kanvas, lalu diskalakan k
-  function layout(k){
-    const cw = (W - mx*2) / k;
-    return {cw, cards: byDate().map(it=>{
-      const when = fmtDate(it.date);
-      ctx.font = `500 30px ${FONT}`;
-      const dateW = compact && when ? ctx.measureText(when).width + 24 : 0;
-      ctx.font = `700 52px ${FONT}`;
-      const lines = wrap(capWords(it.title), cw - pad*2 - dateW);
-      const dateH = !compact && when ? 50 : 0;
-      return {when, lines, dateH, h: pad*2 + dateH + lines.length*tlh - 10};
-    })};
-  }
-  const total = L => L.cards.reduce((s,c)=>s + c.h + gap, 0) - gap;
+  const startY = H * +$('pos').value, maxY = H * 0.93;
 
-  let k = 1, L = layout(k);
-  while(k > 0.4 && startY + total(L)*k > maxY){ k = Math.round((k - 0.02)*100)/100; L = layout(k); }
+  const HEAD = 200, GAP1 = 36, CALPAD = 30, WDH = 48, CELLH = 80, GAP2 = 42, CHIPH = 96, CHIPGAP = 18;
+  const rows = weeksInMonth(vy, vm);
+  const calH = CALPAD*2 + WDH + rows*CELLH;
+  const chipsH = list.length ? list.length*CHIPH + (list.length-1)*CHIPGAP : 0;
+  const contentH = HEAD + GAP1 + calH + (list.length ? GAP2 + chipsH : 0);
+
+  let k = Math.min(1, (maxY - startY) / contentH);
+  if(k < 0.5) k = 0.5;
+  const cw = (W - mx*2) / k;
 
   ctx.save();
+  ctx.translate(mx, startY);
   ctx.scale(k, k);
-  let y = startY / k;
-  const x = mx / k, cw = L.cw;
-  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-  L.cards.forEach((c, i)=>{
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
-    rr(x, y, cw, c.h, 58); ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.fill();
-    ctx.restore();
 
-    let cy = y + pad;
-    if(c.when && compact){
-      ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `500 30px ${FONT}`;
-      ctx.textAlign = 'right'; ctx.fillText(c.when, x+cw-pad, cy + 14); ctx.textAlign = 'left';
-    } else if(c.when){
-      ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `500 34px ${FONT}`;
-      ctx.fillText(c.when, x+pad, cy); cy += c.dateH;
+  // ---- judul bulan ----
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = `600 46px ${FONT}`;
+  ctx.fillText(String(vy), cw, 46);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = t.accent; ctx.font = `700 26px ${FONT}`;
+  ctx.fillText((list.length ? list.length + ' ' : '') + 'PENGINGAT', 0, 42);
+
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#ffffff'; ctx.font = `800 134px ${FONT}`;
+  ctx.fillText(BULAN_PANJANG[vm].toLowerCase(), 0, 62);
+
+  let y = HEAD + GAP1;
+
+  // ---- kalender ----
+  const colW = (cw - CALPAD*2)/7;
+  ctx.save();
+  rr(0, y, cw, calH, 40);
+  ctx.fillStyle = 'rgba(10,12,7,.72)'; ctx.fill();
+  ctx.strokeStyle = hexA(t.accent,.2); ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+
+  const DOW = ['SEN','SEL','RAB','KAM','JUM','SAB','MIN'];
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = t.accent; ctx.font = `700 24px ${FONT}`;
+  DOW.forEach((d,i)=> ctx.fillText(d, CALPAD + colW*(i+0.5), y + CALPAD + WDH/2));
+
+  const z = n => String(n).padStart(2,'0');
+  const first = new Date(vy,vm,1), lead = (first.getDay()+6)%7, days = new Date(vy,vm+1,0).getDate();
+  const has = new Set(list.map(e=>e.date));
+  const gy = y + CALPAD + WDH;
+  for(let d=1; d<=days; d++){
+    const idx = lead + d - 1, r = Math.floor(idx/7), c = idx%7;
+    const cx = CALPAD + colW*(c+0.5), cy = gy + CELLH*(r+0.5);
+    const iso = `${vy}-${z(vm+1)}-${z(d)}`;
+    const isToday = iso === today, isEv = has.has(iso);
+    const bw = Math.min(colW, CELLH)*0.78;
+    if(isToday){
+      rr(cx-bw/2, cy-bw/2, bw, bw, 16);
+      ctx.fillStyle = t.accent; ctx.fill();
+      ctx.fillStyle = '#141708';
+    }else{
+      if(isEv){
+        rr(cx-bw/2, cy-bw/2, bw, bw, 16);
+        ctx.strokeStyle = hexA(t.accent,.85); ctx.lineWidth = 2.5; ctx.stroke();
+      }
+      ctx.fillStyle = isEv ? t.accent : 'rgba(255,255,255,.92)';
     }
-    ctx.fillStyle = '#000'; ctx.font = `700 52px ${FONT}`;
-    c.lines.forEach(l=>{ ctx.fillText(l, x+pad, cy); cy += tlh; });
-    y += c.h + gap;
-  });
+    ctx.font = `${(isToday||isEv) ? '700' : '500'} 34px ${FONT}`;
+    ctx.fillText(String(d), cx, cy+1);
+  }
+  y += calH;
+
+  // ---- chip event ----
+  if(list.length){
+    y += GAP2;
+    for(const e of list){
+      ctx.save();
+      rr(0, y, cw, CHIPH, 26);
+      ctx.fillStyle = 'rgba(8,10,5,.72)'; ctx.fill();
+      ctx.strokeStyle = hexA(t.accent,.22); ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+
+      const dd = e.date ? +e.date.slice(8,10) : null;
+      rr(22, y+22, 52, 52, 16);
+      ctx.fillStyle = t.accent; ctx.fill();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#141708'; ctx.font = `800 30px ${FONT}`;
+      ctx.fillText(dd ? String(dd) : '•', 48, y + CHIPH/2 + 1);
+
+      const title = capWords(e.title);
+      fitFont(title, cw - 22 - 52 - 24 - 24, '600', 36);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#f3f6ea';
+      ctx.fillText(title, 22 + 52 + 24, y + CHIPH/2 + 1);
+
+      y += CHIPH + CHIPGAP;
+    }
+  }
+
   ctx.restore();
 }
 $('pos').addEventListener('input', draw);
