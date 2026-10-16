@@ -15,7 +15,7 @@ p.sub{margin:0 0 14px;color:var(--mute);font-size:14px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;}
 label{font-size:12px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;display:grid;gap:6px;}
 textarea,input,select{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:16px;font-family:inherit;width:100%;}
-textarea{min-height:110px;resize:vertical;}
+textarea{min-height:130px;resize:vertical;}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .themes{display:flex;gap:8px;flex-wrap:wrap;}
 .themes button{width:44px;height:44px;border-radius:12px;border:2px solid transparent;cursor:pointer;}
@@ -30,29 +30,29 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/19.5;border-radius:26px;border:
 <div class="wrap">
   <div>
     <h1>Wallpaper Reminder</h1>
-    <p class="sub">Tulis reminder, unduh gambarnya, jadikan wallpaper lock screen.</p>
+    <p class="sub">Reminder tampil seperti notifikasi di lock screen.</p>
     <div class="card">
-      <label>Judul kecil
-        <input id="title" value="INGAT!" maxlength="24">
+      <label>Nama app di kartu
+        <input id="app" value="REMINDER" maxlength="20">
       </label>
-      <label>Isi reminder (tiap baris = satu poin)
-        <textarea id="body">Bayar listrik tanggal 20
-Telepon mama sore ini
-Kirim laporan sebelum jam 5</textarea>
+      <label>Isi (satu baris = satu kartu, format: Judul | detail)
+        <textarea id="body">Bayar listrik | Paling lambat tanggal 20
+Telepon mama | Sore ini sebelum jam 5
+Kirim laporan | Deadline hari ini</textarea>
       </label>
       <div class="row">
-        <label>Ukuran teks
-          <select id="size"><option value="1">Sedang</option><option value="1.2">Besar</option><option value="0.85">Kecil</option></select>
+        <label>Label waktu
+          <input id="when" value="sekarang" maxlength="14">
         </label>
-        <label>Posisi
-          <select id="pos"><option value="0.42">Tengah (di bawah jam)</option><option value="0.6">Bawah</option></select>
+        <label>Posisi kartu
+          <select id="pos"><option value="0.3">Tengah</option><option value="0.45">Bawah</option><option value="0.18">Atas</option></select>
         </label>
       </div>
-      <label>Warna tema
+      <label>Warna latar
         <div class="themes" id="themes"></div>
       </label>
       <button class="go" id="dl">Unduh PNG</button>
-      <div class="hint">Cara pasang di Android: buka file hasil unduhan di Galeri → ⋮ → <b>Setel sebagai wallpaper</b> → pilih <b>Layar kunci</b>. Jam bawaan HP tampil di bagian atas, jadi teks sengaja ditaruh di bawahnya.</div>
+      <div class="hint">Android: buka file hasil unduhan di Galeri → ⋮ → <b>Setel sebagai wallpaper</b> → <b>Layar kunci</b>. Jam asli HP tampil di atas, kartunya ditaruh di bawah jam.</div>
     </div>
   </div>
   <div class="prev"><canvas id="cv" width="1080" height="2340"></canvas></div>
@@ -60,16 +60,17 @@ Kirim laporan sebelum jam 5</textarea>
 
 <script>
 const THEMES = [
-  {bg:['#0f2027','#2c5364'], fg:'#ffffff', ac:'#ffd24a'},
-  {bg:['#1a0b2e','#6a1b9a'], fg:'#ffffff', ac:'#ff9ecb'},
-  {bg:['#0b1f14','#1f6b43'], fg:'#ffffff', ac:'#b6ff6a'},
-  {bg:['#2b0d0d','#b3261e'], fg:'#ffffff', ac:'#ffd9a0'},
-  {bg:['#f4efe6','#d9cdb4'], fg:'#1d1a14', ac:'#c2410c'},
-  {bg:['#000000','#111111'], fg:'#ffffff', ac:'#ff3b30'}
+  {bg:['#ff6a88','#6a3df0'], blobs:['#ffb199','#3ad1ff']},
+  {bg:['#0f2027','#2c5364'], blobs:['#2bc0e4','#7f5af0']},
+  {bg:['#134e5e','#71b280'], blobs:['#c6ffdd','#fbd786']},
+  {bg:['#42275a','#734b6d'], blobs:['#ff9ecb','#ffd1a9']},
+  {bg:['#f7971e','#c33764'], blobs:['#ffd200','#1d2671']},
+  {bg:['#0b0b0f','#1c1c28'], blobs:['#ff3b30','#5856d6']}
 ];
 let theme = 0;
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
+const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 $('themes').innerHTML = THEMES.map((t,i)=>`<button data-i="${i}" style="background:linear-gradient(135deg,${t.bg[0]},${t.bg[1]})" class="${i===0?'on':''}" aria-label="Tema ${i+1}"></button>`).join('');
 $('themes').addEventListener('click', e=>{
@@ -79,6 +80,11 @@ $('themes').addEventListener('click', e=>{
   draw();
 });
 
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
 function wrap(text, maxW){
   const words = text.split(/\s+/), lines = []; let cur = '';
   for(const w of words){
@@ -89,33 +95,63 @@ function wrap(text, maxW){
   return lines;
 }
 
-function draw(){
-  const t = THEMES[theme], W = cv.width, H = cv.height, k = +$('size').value;
+function background(t){
+  const W = cv.width, H = cv.height;
   const g = ctx.createLinearGradient(0,0,W,H);
   g.addColorStop(0,t.bg[0]); g.addColorStop(1,t.bg[1]);
   ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-  const padX = 90, maxW = W - padX*2;
-  let y = H * +$('pos').value;
-  ctx.textBaseline = 'top';
-
-  ctx.fillStyle = t.ac;
-  ctx.font = `800 ${52*k}px system-ui, 'Segoe UI', Roboto, sans-serif`;
-  ctx.fillText(($('title').value||'').toUpperCase(), padX, y);
-  y += 52*k + 34;
-  ctx.fillRect(padX, y, 120, 8);
-  y += 8 + 46;
-
-  const fs = 62*k, lh = fs*1.3;
-  ctx.font = `600 ${fs}px system-ui, 'Segoe UI', Roboto, sans-serif`;
-  $('body').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(item=>{
-    ctx.fillStyle = t.ac; ctx.fillText('•', padX, y);
-    ctx.fillStyle = t.fg;
-    wrap(item, maxW - 60).forEach(line=>{ ctx.fillText(line, padX+60, y); y += lh; });
-    y += lh*0.35;
+  [[0.15,0.2,700,t.blobs[0]],[0.9,0.75,800,t.blobs[1]]].forEach(([px,py,r,c])=>{
+    const rg = ctx.createRadialGradient(W*px,H*py,0,W*px,H*py,r);
+    rg.addColorStop(0,c+'cc'); rg.addColorStop(1,c+'00');
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
   });
 }
-['title','body','size','pos'].forEach(id=>$(id).addEventListener('input', draw));
+
+function draw(){
+  const t = THEMES[theme], W = cv.width, H = cv.height;
+  background(t);
+
+  const mx = 48, cw = W - mx*2, pad = 44, gap = 26;
+  let y = H * +$('pos').value;
+  const app = ($('app').value||'REMINDER').toUpperCase();
+  const when = $('when').value || '';
+  const items = $('body').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{
+    const [a,...r] = s.split('|'); return r.length ? {title:a.trim(), text:r.join('|').trim()} : {title:'', text:a.trim()};
+  });
+
+  items.forEach(it=>{
+    ctx.font = `500 44px ${FONT}`;
+    const lines = it.text ? wrap(it.text, cw - pad*2) : [];
+    const headH = 44, titleH = it.title ? 64 : 0, lh = 56;
+    const ch = pad + headH + 22 + titleH + lines.length*lh + pad - 8;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
+    rr(mx,y,cw,ch,58); ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.fill();
+    ctx.restore();
+
+    let cy = y + pad;
+    rr(mx+pad, cy, 44, 44, 11); ctx.fillStyle = '#34c759'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = `800 30px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ctx.fillText('!', mx+pad+22, cy+23);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `600 34px ${FONT}`;
+    ctx.fillText(app, mx+pad+64, cy+23);
+    ctx.textAlign = 'right'; ctx.font = `400 34px ${FONT}`;
+    ctx.fillText(when, mx+cw-pad, cy+23);
+    ctx.textAlign = 'left';
+
+    cy += headH + 22; ctx.textBaseline = 'top';
+    if(it.title){
+      ctx.fillStyle = '#000'; ctx.font = `700 46px ${FONT}`;
+      ctx.fillText(it.title, mx+pad, cy); cy += titleH;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.85)'; ctx.font = `400 44px ${FONT}`;
+    lines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += lh; });
+    y += ch + gap;
+  });
+}
+['app','body','when','pos'].forEach(id=>$(id).addEventListener('input', draw));
 
 $('dl').addEventListener('click', ()=>{
   const a = document.createElement('a');
