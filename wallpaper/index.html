@@ -6,54 +6,61 @@
 <title>Wallpaper Reminder</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#0b3d2e">
+<meta name="theme-color" content="#0c0e08">
 <style>
-:root{--bg:#0e1117;--card:#171b24;--line:#2a3040;--text:#eef1f7;--mute:#8b93a7;--accent:#ffd24a;}
+:root{--bg:#0c0e08;--card:#151a0f;--card2:#1b2113;--line:rgba(200,232,78,.16);--text:#eef2e2;--mute:#8f9a7c;--accent:#c8e84e;--accent-ink:#12160a;--glow:#a8e33c;}
 *{box-sizing:border-box;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
-.wrap{max-width:900px;margin:0 auto;padding:20px 16px 40px;display:grid;gap:18px;grid-template-columns:1fr;}
+html,body{min-height:100%;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;position:relative;overflow-x:hidden;}
+body::before,body::after{content:"";position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:0;}
+body::before{width:320px;height:320px;top:-110px;left:-80px;background:radial-gradient(circle at 40% 40%,var(--glow),transparent 70%);opacity:.55;}
+body::after{width:440px;height:440px;bottom:-160px;right:-140px;background:radial-gradient(circle at 60% 60%,#c8e84e,transparent 70%);opacity:.4;}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:28px 16px 48px;display:grid;gap:18px;grid-template-columns:1fr;}
 @media(min-width:760px){.wrap{grid-template-columns:1fr 300px;align-items:start;}}
-h1{font-size:22px;margin:0 0 4px;}
-p.sub{margin:0 0 14px;color:var(--mute);font-size:14px;}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;}
-label{font-size:12px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;display:grid;gap:6px;}
-textarea,input,select{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:16px;font-family:inherit;width:100%;}
+h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em;}
+h1 .dot{color:var(--accent);}
+p.sub{margin:6px 0 14px;color:var(--mute);font-size:14px;}
+.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:14px;box-shadow:0 30px 70px -40px rgba(0,0,0,.95);}
+label{font-size:11px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;display:grid;gap:8px;font-weight:600;}
+textarea,input,select{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px 13px;font-size:16px;font-family:inherit;width:100%;transition:border-color .15s,box-shadow .15s;}
+textarea:focus,input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,232,78,.15);}
 textarea{min-height:130px;resize:vertical;}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;}
 .themes{display:flex;gap:8px;flex-wrap:wrap;}
 .themes button{width:44px;height:44px;border-radius:12px;border:2px solid transparent;cursor:pointer;}
-.themes button.on{border-color:#fff;}
-button.go{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;}
-.row{align-items:end;}
-button.add{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:10px;padding:11px;font-size:16px;cursor:pointer;}
-.cal{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px;}
-.cal .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.cal .hd b{font-size:15px;}
-.cal .hd button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;width:38px;height:34px;font-size:16px;cursor:pointer;}
+.themes button.on{border-color:var(--accent);}
+button.go{background:var(--accent);color:var(--accent-ink);font-weight:800;border:0;border-radius:14px;padding:15px;font-size:16px;cursor:pointer;transition:transform .1s;}
+button.go:active{transform:scale(.99);}
+button.add{background:var(--accent);color:var(--accent-ink);font-weight:800;border:0;border-radius:12px;padding:12px;font-size:16px;cursor:pointer;}
+.cal{background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:18px;padding:14px;}
+.cal .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal .hd b{font-size:16px;text-transform:capitalize;}
+.cal .hd button{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;width:40px;height:36px;font-size:17px;cursor:pointer;}
 .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.cal .dow{font-size:11px;color:var(--mute);text-align:center;padding:4px 0;}
-.cal .d{position:relative;aspect-ratio:1.25;border:0;border-radius:10px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;}
-.cal .d:hover{background:var(--card);}
-.cal .d.today{box-shadow:inset 0 0 0 1.5px var(--accent);}
-.cal .d.sel{background:#1f8a5b;font-weight:700;}
+.cal .dow{font-size:11px;color:var(--accent);text-align:center;padding:6px 0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.cal .d{position:relative;aspect-ratio:1.2;border:0;border-radius:11px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;}
+.cal .d:hover{background:rgba(200,232,78,.1);}
+.cal .d.today{box-shadow:inset 0 0 0 1.5px rgba(200,232,78,.5);}
+.cal .d.sel{box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent);font-weight:700;}
 .cal .d.has::after{content:"";position:absolute;bottom:5px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent);}
 .cal .d.blank{visibility:hidden;}
 .events{display:grid;gap:8px;}
-.ev{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+.ev{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:14px;padding:11px 12px;}
+.ev .day{flex:0 0 34px;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(200,232,78,.14);color:var(--accent);font-weight:800;font-size:14px;}
 .ev .t{flex:1;font-size:15px;font-weight:600;}
-.ev .t small{display:block;color:var(--mute);font-weight:400;font-size:12px;margin-top:2px;}
-.ev button{background:#1f8a5b;color:#fff;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
+.ev .t small{display:block;color:var(--mute);font-weight:500;font-size:12px;margin-top:3px;}
+.ev button{background:rgba(200,232,78,.12);color:var(--accent);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
 .none{color:var(--mute);font-size:13px;text-align:center;padding:6px 0;}
 button.go.alt{background:transparent;color:var(--text);border:1px solid var(--line);}
 .prev{display:grid;place-items:center;}
-canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2px solid var(--line);background:#000;}
+canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:1px solid var(--line);background:#000;box-shadow:0 0 70px -10px rgba(168,227,60,.35);}
 .hint{font-size:13px;color:var(--mute);line-height:1.5;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div>
-    <h1>Wallpaper Reminder</h1>
+    <h1>Wallpaper Reminder<span class="dot">.</span></h1>
     <p class="sub">Reminder tampil seperti notifikasi di lock screen.</p>
     <div class="card">
       <label>Event baru
@@ -165,7 +172,10 @@ const byDate = () => [...events].sort((a,b)=> (a.date||'9999-99-99').localeCompa
 function renderEvents(){
   renderCal();
   $('events').innerHTML = events.length
-    ? byDate().map(e=>`<div class="ev"><div class="t">${esc(e.title)}<small>${fmtDate(e.date)}</small></div><button data-id="${e.id}" type="button">✓ Selesai</button></div>`).join('')
+    ? byDate().map(e=>{
+        const dd = (e.date||'').slice(8,10);
+        return `<div class="ev"><div class="day">${dd ? +dd : '•'}</div><div class="t">${esc(e.title)}<small>${fmtDate(e.date)}</small></div><button data-id="${e.id}" type="button">✓ Selesai</button></div>`;
+      }).join('')
     : '<div class="none">Tidak ada event. Wallpaper akan kosong.</div>';
 }
 function addEvent(){
