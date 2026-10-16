@@ -36,6 +36,9 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
         <textarea id="body">SPG Event HPM Gorontalo, PDL Indogrosir, Hilo School Original Sejahtera Bulukumba</textarea>
       </label>
       <div class="row">
+        <label>Tanggal
+          <input id="when" type="date">
+        </label>
         <label>Posisi kartu
           <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
         </label>
@@ -72,6 +75,16 @@ $('themes').addEventListener('click', e=>{
   draw();
 });
 
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function fmtDate(v){
+  const p = (v||'').split('-');
+  return p.length===3 ? `${+p[2]} ${BULAN[+p[1]-1]} ${p[0]}` : '';
+}
+(function(){
+  const d = new Date(), z = n => String(n).padStart(2,'0');
+  $('when').value = `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+})();
+
 function rr(x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
@@ -105,12 +118,14 @@ function draw(){
 
   const mx = 48, cw = W - mx*2, pad = 44, gap = 26;
   let y = H * +$('pos').value;
+  const when = fmtDate($('when').value);
   const items = $('body').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).map(s=>({title:s, text:''}));
 
   items.forEach(it=>{
-    ctx.font = `800 72px ${FONT}`;
-    const tLines = wrap(it.title, cw - pad*2), tlh = 88;
-    const ch = pad*2 + tLines.length*tlh - 12;
+    ctx.font = `700 52px ${FONT}`;
+    const tLines = wrap(it.title, cw - pad*2), tlh = 66;
+    const dateH = when ? 50 : 0;
+    const ch = pad*2 + dateH + tLines.length*tlh - 10;
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
@@ -118,12 +133,16 @@ function draw(){
     ctx.restore();
 
     let cy = y + pad; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-    ctx.fillStyle = '#000'; ctx.font = `800 72px ${FONT}`;
+    if(when){
+      ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `500 34px ${FONT}`;
+      ctx.fillText(when, mx+pad, cy); cy += dateH;
+    }
+    ctx.fillStyle = '#000'; ctx.font = `700 52px ${FONT}`;
     tLines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += tlh; });
     y += ch + gap;
   });
 }
-['body','pos'].forEach(id=>$(id).addEventListener('input', draw));
+['body','when','pos'].forEach(id=>$(id).addEventListener('input', draw));
 
 $('dl').addEventListener('click', ()=>{
   const a = document.createElement('a');
