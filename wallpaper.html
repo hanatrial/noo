@@ -32,16 +32,10 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
     <h1>Wallpaper Reminder</h1>
     <p class="sub">Reminder tampil seperti notifikasi di lock screen.</p>
     <div class="card">
-      <label>Nama app di kartu
-        <input id="app" value="REMINDER" maxlength="20">
-      </label>
-      <label>Isi (pisahkan tiap reminder dengan koma)
+      <label>Judul (pisahkan dengan koma untuk beberapa kartu)
         <textarea id="body">SPG Event HPM Gorontalo, PDL Indogrosir, Hilo School Original Sejahtera Bulukumba</textarea>
       </label>
       <div class="row">
-        <label>Tanggal
-          <input id="when" type="date">
-        </label>
         <label>Posisi kartu
           <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
         </label>
@@ -78,16 +72,6 @@ $('themes').addEventListener('click', e=>{
   draw();
 });
 
-const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-function fmtDate(v){
-  const p = (v||'').split('-');
-  return p.length===3 ? `${+p[2]} ${BULAN[+p[1]-1]} ${p[0]}` : '';
-}
-(function(){
-  const d = new Date(), z = n => String(n).padStart(2,'0');
-  $('when').value = `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-})();
-
 function rr(x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
@@ -121,39 +105,25 @@ function draw(){
 
   const mx = 48, cw = W - mx*2, pad = 44, gap = 26;
   let y = H * +$('pos').value;
-  const app = ($('app').value||'REMINDER').toUpperCase();
-  const when = fmtDate($('when').value);
   const items = $('body').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).map(s=>({title:s, text:''}));
 
   items.forEach(it=>{
-    ctx.font = `700 46px ${FONT}`;
-    const tLines = wrap(it.title, cw - pad*2), tlh = 60;
-    const headH = 44, titleH = tLines.length*tlh;
-    const ch = pad + headH + 22 + titleH + pad - 8;
+    ctx.font = `800 72px ${FONT}`;
+    const tLines = wrap(it.title, cw - pad*2), tlh = 88;
+    const ch = pad*2 + tLines.length*tlh - 12;
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
     rr(mx,y,cw,ch,58); ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.fill();
     ctx.restore();
 
-    let cy = y + pad;
-    rr(mx+pad, cy, 44, 44, 11); ctx.fillStyle = '#34c759'; ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = `800 30px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-    ctx.fillText('!', mx+pad+22, cy+23);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `600 34px ${FONT}`;
-    ctx.fillText(app, mx+pad+64, cy+23);
-    ctx.textAlign = 'right'; ctx.font = `400 34px ${FONT}`;
-    ctx.fillText(when, mx+cw-pad, cy+23);
-    ctx.textAlign = 'left';
-
-    cy += headH + 22; ctx.textBaseline = 'top';
-    ctx.fillStyle = '#000'; ctx.font = `700 46px ${FONT}`;
+    let cy = y + pad; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#000'; ctx.font = `800 72px ${FONT}`;
     tLines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += tlh; });
     y += ch + gap;
   });
 }
-['app','body','when','pos'].forEach(id=>$(id).addEventListener('input', draw));
+['body','pos'].forEach(id=>$(id).addEventListener('input', draw));
 
 $('dl').addEventListener('click', ()=>{
   const a = document.createElement('a');
