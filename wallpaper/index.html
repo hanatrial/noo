@@ -24,6 +24,14 @@ textarea{min-height:130px;resize:vertical;}
 .themes button{width:44px;height:44px;border-radius:12px;border:2px solid transparent;cursor:pointer;}
 .themes button.on{border-color:#fff;}
 button.go{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;}
+.row{align-items:end;}
+button.add{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:10px;padding:11px;font-size:16px;cursor:pointer;}
+.events{display:grid;gap:8px;}
+.ev{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+.ev .t{flex:1;font-size:15px;font-weight:600;}
+.ev .t small{display:block;color:var(--mute);font-weight:400;font-size:12px;margin-top:2px;}
+.ev button{background:#1f8a5b;color:#fff;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
+.none{color:var(--mute);font-size:13px;text-align:center;padding:6px 0;}
 .prev{display:grid;place-items:center;}
 canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2px solid var(--line);background:#000;}
 .hint{font-size:13px;color:var(--mute);line-height:1.5;}
@@ -35,17 +43,19 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
     <h1>Wallpaper Reminder</h1>
     <p class="sub">Reminder tampil seperti notifikasi di lock screen.</p>
     <div class="card">
-      <label>Judul (pisahkan dengan koma untuk beberapa kartu)
-        <textarea id="body">SPG Event HPM Gorontalo, PDL Indogrosir, Hilo School Original Sejahtera Bulukumba</textarea>
+      <label>Event baru
+        <input id="evTitle" placeholder="Nama event, mis. PDL Indogrosir" maxlength="80">
       </label>
       <div class="row">
         <label>Tanggal
-          <input id="when" type="date">
+          <input id="evDate" type="date">
         </label>
-        <label>Posisi kartu
-          <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
-        </label>
+        <button class="add" id="evAdd" type="button">+ Tambah</button>
       </div>
+      <div class="events" id="events"></div>
+      <label>Posisi kartu
+        <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
+      </label>
       <label>Warna latar
         <div class="themes" id="themes"></div>
       </label>
@@ -83,10 +93,48 @@ function fmtDate(v){
   const p = (v||'').split('-');
   return p.length===3 ? `${+p[2]} ${BULAN[+p[1]-1]} ${p[0]}` : '';
 }
-(function(){
+const todayISO = ()=>{
   const d = new Date(), z = n => String(n).padStart(2,'0');
-  $('when').value = `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-})();
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+};
+$('evDate').value = todayISO();
+
+const STORE_KEY = 'wp-events';
+const DEFAULT_EVENTS = [
+  {id:1, title:'SPG Event HPM Gorontalo', date:todayISO()},
+  {id:2, title:'PDL Indogrosir', date:todayISO()},
+  {id:3, title:'Hilo School Original Sejahtera Bulukumba', date:todayISO()}
+];
+let events;
+try{
+  const raw = localStorage.getItem(STORE_KEY);
+  events = raw ? JSON.parse(raw) : DEFAULT_EVENTS;
+}catch(e){ events = DEFAULT_EVENTS; }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(events)); }catch(e){} }
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function renderEvents(){
+  $('events').innerHTML = events.length
+    ? events.map(e=>`<div class="ev"><div class="t">${esc(e.title)}<small>${fmtDate(e.date)}</small></div><button data-id="${e.id}" type="button">✓ Selesai</button></div>`).join('')
+    : '<div class="none">Tidak ada event. Wallpaper akan kosong.</div>';
+}
+function addEvent(){
+  const title = $('evTitle').value.trim();
+  if(!title){ $('evTitle').focus(); return; }
+  events.push({id:Date.now(), title, date:$('evDate').value});
+  $('evTitle').value = '';
+  save(); renderEvents(); draw();
+}
+$('evAdd').addEventListener('click', addEvent);
+$('evTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addEvent(); });
+$('events').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  events = events.filter(x=>x.id !== +b.dataset.id);
+  save(); renderEvents(); draw();
+});
+
+// huruf pertama tiap kata jadi kapital; huruf lainnya dibiarkan sesuai ketikan
+const capWords = s => s.replace(/(^|[\s(\/-])(\p{L})/gu, (m, p, c)=> p + c.toUpperCase());
 
 function rr(x,y,w,h,r){
   ctx.beginPath();
@@ -119,33 +167,56 @@ function draw(){
   const t = THEMES[theme], W = cv.width, H = cv.height;
   background(t);
 
-  const mx = 48, cw = W - mx*2, pad = 44, gap = 26;
-  let y = H * +$('pos').value;
-  const when = fmtDate($('when').value);
-  const items = $('body').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).map(s=>({title:s, text:''}));
+  // lebih dari 4 event: mode ringkas (tanggal sejajar di kanan judul)
+  const compact = events.length > 4;
+  const mx = 48, pad = compact ? 30 : 44, gap = compact ? 16 : 26, tlh = 66;
+  const startY = H * +$('pos').value;
+  const maxY = H * 0.9;
 
-  items.forEach(it=>{
-    ctx.font = `700 52px ${FONT}`;
-    const tLines = wrap(it.title, cw - pad*2), tlh = 66;
-    const dateH = when ? 50 : 0;
-    const ch = pad*2 + dateH + tLines.length*tlh - 10;
+  // tata letak dalam koordinat "virtual" selebar 1/k kali kanvas, lalu diskalakan k
+  function layout(k){
+    const cw = (W - mx*2) / k;
+    return {cw, cards: events.map(it=>{
+      const when = fmtDate(it.date);
+      ctx.font = `500 30px ${FONT}`;
+      const dateW = compact && when ? ctx.measureText(when).width + 24 : 0;
+      ctx.font = `700 52px ${FONT}`;
+      const lines = wrap(capWords(it.title), cw - pad*2 - dateW);
+      const dateH = !compact && when ? 50 : 0;
+      return {when, lines, dateH, h: pad*2 + dateH + lines.length*tlh - 10};
+    })};
+  }
+  const total = L => L.cards.reduce((s,c)=>s + c.h + gap, 0) - gap;
 
+  let k = 1, L = layout(k);
+  while(k > 0.4 && startY + total(L)*k > maxY){ k = Math.round((k - 0.02)*100)/100; L = layout(k); }
+
+  ctx.save();
+  ctx.scale(k, k);
+  let y = startY / k;
+  const x = mx / k, cw = L.cw;
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  L.cards.forEach((c, i)=>{
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
-    rr(mx,y,cw,ch,58); ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.fill();
+    rr(x, y, cw, c.h, 58); ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.fill();
     ctx.restore();
 
-    let cy = y + pad; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-    if(when){
+    let cy = y + pad;
+    if(c.when && compact){
+      ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `500 30px ${FONT}`;
+      ctx.textAlign = 'right'; ctx.fillText(c.when, x+cw-pad, cy + 14); ctx.textAlign = 'left';
+    } else if(c.when){
       ctx.fillStyle = 'rgba(60,60,67,.75)'; ctx.font = `500 34px ${FONT}`;
-      ctx.fillText(when, mx+pad, cy); cy += dateH;
+      ctx.fillText(c.when, x+pad, cy); cy += c.dateH;
     }
     ctx.fillStyle = '#000'; ctx.font = `700 52px ${FONT}`;
-    tLines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += tlh; });
-    y += ch + gap;
+    c.lines.forEach(l=>{ ctx.fillText(l, x+pad, cy); cy += tlh; });
+    y += c.h + gap;
   });
+  ctx.restore();
 }
-['body','when','pos'].forEach(id=>$(id).addEventListener('input', draw));
+$('pos').addEventListener('input', draw);
 
 $('dl').addEventListener('click', ()=>{
   const a = document.createElement('a');
@@ -153,6 +224,7 @@ $('dl').addEventListener('click', ()=>{
   a.href = cv.toDataURL('image/png');
   a.click();
 });
+renderEvents();
 draw();
 
 if('serviceWorker' in navigator){
