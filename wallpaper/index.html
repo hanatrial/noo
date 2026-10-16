@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wallpaper Reminder</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b3d2e">
 <style>
 :root{--bg:#0e1117;--card:#171b24;--line:#2a3040;--text:#eef1f7;--mute:#8b93a7;--accent:#ffd24a;}
 *{box-sizing:border-box;}
@@ -151,6 +154,10 @@ $('dl').addEventListener('click', ()=>{
   a.click();
 });
 draw();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
+}
 </script>
 </body>
 </html>
