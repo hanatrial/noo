@@ -102,9 +102,12 @@ $('themes').addEventListener('click', e=>{
 });
 
 const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 function fmtDate(v){
   const p = (v||'').split('-');
-  return p.length===3 ? `${+p[2]} ${BULAN[+p[1]-1]} ${p[0]}` : '';
+  if(p.length!==3) return '';
+  const hari = HARI[new Date(+p[0], +p[1]-1, +p[2]).getDay()];
+  return `${hari}, ${+p[2]} ${BULAN[+p[1]-1]} ${p[0]}`;
 }
 const todayISO = ()=>{
   const d = new Date(), z = n => String(n).padStart(2,'0');
