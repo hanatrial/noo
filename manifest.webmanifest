@@ -3,7 +3,7 @@
   "short_name": "Stok BCP",
   "description": "DOI rendah dan saran Ancab antar cabang BCP",
   "start_url": "./stok-ancab.html",
-  "scope": "./",
+  "scope": "./stok-ancab.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#1B232B",
