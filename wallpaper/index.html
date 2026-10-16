@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wallpaper Reminder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=Poppins:wght@500;700&family=Montserrat:wght@500;700&family=Nunito:wght@500;700&family=Playfair+Display:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b3d2e">
@@ -64,6 +67,17 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
       <div class="cal" id="cal"></div>
       <button class="add" id="evAdd" type="button">+ Tambah</button>
       <div class="events" id="events"></div>
+      <label>Font
+        <select id="fontSel">
+          <option value="Inter">Inter — bersih, modern</option>
+          <option value="Poppins">Poppins — bulat, ramah</option>
+          <option value="Montserrat">Montserrat — tegas</option>
+          <option value="Nunito">Nunito — lembut</option>
+          <option value="Playfair Display">Playfair Display — elegan (serif)</option>
+          <option value="Space Grotesk">Space Grotesk — teknis</option>
+          <option value="">Bawaan HP</option>
+        </select>
+      </label>
       <label>Posisi kartu
         <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
       </label>
@@ -91,7 +105,16 @@ const THEMES = [
 let theme = 0;
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
-const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+const SYS_FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+let FONT = "'Inter', " + SYS_FONT;
+
+// font dipilih disimpan di browser; kanvas harus digambar ulang setelah font selesai dimuat
+function applyFont(name){
+  FONT = name ? `'${name}', ${SYS_FONT}` : SYS_FONT;
+  if(!name){ draw(); return; }
+  Promise.all(['500 30px','700 52px'].map(s => document.fonts.load(`${s} '${name}'`)))
+    .catch(()=>{}).then(draw);
+}
 
 $('themes').innerHTML = THEMES.map((t,i)=>`<button data-i="${i}" style="background:linear-gradient(135deg,${t.bg[0]},${t.bg[1]})" class="${i===0?'on':''}" aria-label="Tema ${i+1}"></button>`).join('');
 $('themes').addEventListener('click', e=>{
@@ -265,6 +288,10 @@ function draw(){
   ctx.restore();
 }
 $('pos').addEventListener('input', draw);
+$('fontSel').addEventListener('change', ()=>{
+  try{ localStorage.setItem('wp-font', $('fontSel').value); }catch(e){}
+  applyFont($('fontSel').value);
+});
 
 function download(){
   const a = document.createElement('a');
@@ -292,7 +319,12 @@ $('share').addEventListener('click', ()=>{
   }, 'image/png');
 });
 renderEvents();
-draw();
+(function(){
+  let f = 'Inter';
+  try{ const s = localStorage.getItem('wp-font'); if(s !== null) f = s; }catch(e){}
+  $('fontSel').value = f;
+  applyFont(f);
+})();
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
