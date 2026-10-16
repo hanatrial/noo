@@ -26,6 +26,18 @@ textarea{min-height:130px;resize:vertical;}
 button.go{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;}
 .row{align-items:end;}
 button.add{background:var(--accent);color:#231a00;font-weight:700;border:0;border-radius:10px;padding:11px;font-size:16px;cursor:pointer;}
+.cal{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px;}
+.cal .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cal .hd b{font-size:15px;}
+.cal .hd button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;width:38px;height:34px;font-size:16px;cursor:pointer;}
+.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal .dow{font-size:11px;color:var(--mute);text-align:center;padding:4px 0;}
+.cal .d{position:relative;aspect-ratio:1.25;border:0;border-radius:10px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;}
+.cal .d:hover{background:var(--card);}
+.cal .d.today{box-shadow:inset 0 0 0 1.5px var(--accent);}
+.cal .d.sel{background:#1f8a5b;font-weight:700;}
+.cal .d.has::after{content:"";position:absolute;bottom:5px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent);}
+.cal .d.blank{visibility:hidden;}
 .events{display:grid;gap:8px;}
 .ev{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
 .ev .t{flex:1;font-size:15px;font-weight:600;}
@@ -47,12 +59,10 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
       <label>Event baru
         <input id="evTitle" placeholder="Nama event, mis. PDL Indogrosir" maxlength="80">
       </label>
-      <div class="row">
-        <label>Tanggal
-          <input id="evDate" type="date">
-        </label>
-        <button class="add" id="evAdd" type="button">+ Tambah</button>
-      </div>
+      <label>Tanggal (klik tanggalnya)</label>
+      <input id="evDate" type="hidden">
+      <div class="cal" id="cal"></div>
+      <button class="add" id="evAdd" type="button">+ Tambah</button>
       <div class="events" id="events"></div>
       <label>Posisi kartu
         <select id="pos"><option value="0.41">Tepat di bawah jam</option><option value="0.5">Agak ke bawah</option></select>
@@ -102,6 +112,36 @@ const todayISO = ()=>{
 };
 $('evDate').value = todayISO();
 
+// kalender sebulan: klik tanggal untuk memilih
+const BULAN_PANJANG = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+let calY = +todayISO().slice(0,4), calM = +todayISO().slice(5,7) - 1;
+function renderCal(){
+  const z = n => String(n).padStart(2,'0');
+  const sel = $('evDate').value, today = todayISO();
+  const has = new Set(events.map(e=>e.date));
+  const first = new Date(calY, calM, 1);
+  const lead = (first.getDay() + 6) % 7;            // pekan mulai Senin
+  const days = new Date(calY, calM + 1, 0).getDate();
+  let h = `<div class="hd"><button type="button" data-nav="-1" aria-label="Bulan sebelumnya">‹</button><b>${BULAN_PANJANG[calM]} ${calY}</b><button type="button" data-nav="1" aria-label="Bulan berikutnya">›</button></div><div class="grid">`;
+  h += ['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(d=>`<div class="dow">${d}</div>`).join('');
+  h += '<span class="d blank"></span>'.repeat(lead);
+  for(let d=1; d<=days; d++){
+    const iso = `${calY}-${z(calM+1)}-${z(d)}`;
+    h += `<button type="button" class="d${iso===sel?' sel':''}${iso===today?' today':''}${has.has(iso)?' has':''}" data-date="${iso}">${d}</button>`;
+  }
+  $('cal').innerHTML = h + '</div>';
+}
+$('cal').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.nav){
+    calM += +b.dataset.nav;
+    if(calM < 0){ calM = 11; calY--; } else if(calM > 11){ calM = 0; calY++; }
+  }else if(b.dataset.date){
+    $('evDate').value = b.dataset.date;
+  }
+  renderCal();
+});
+
 const STORE_KEY = 'wp-events';
 const DEFAULT_EVENTS = [
   {id:1, title:'SPG Event HPM Gorontalo', date:todayISO()},
@@ -120,6 +160,7 @@ const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const byDate = () => [...events].sort((a,b)=> (a.date||'9999-99-99').localeCompare(b.date||'9999-99-99'));
 
 function renderEvents(){
+  renderCal();
   $('events').innerHTML = events.length
     ? byDate().map(e=>`<div class="ev"><div class="t">${esc(e.title)}<small>${fmtDate(e.date)}</small></div><button data-id="${e.id}" type="button">✓ Selesai</button></div>`).join('')
     : '<div class="none">Tidak ada event. Wallpaper akan kosong.</div>';
