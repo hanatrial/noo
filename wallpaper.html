@@ -35,10 +35,8 @@ canvas{width:100%;max-width:280px;aspect-ratio:9/20;border-radius:26px;border:2p
       <label>Nama app di kartu
         <input id="app" value="REMINDER" maxlength="20">
       </label>
-      <label>Isi (satu baris = satu kartu, format: Judul | detail)
-        <textarea id="body">SPG Event | HPM Gorontalo
-PDL | Indogrosir
-Hilo School Original | Sejahtera Bulukumba</textarea>
+      <label>Isi (pisahkan tiap reminder dengan koma)
+        <textarea id="body">SPG Event HPM Gorontalo, PDL Indogrosir, Hilo School Original Sejahtera Bulukumba</textarea>
       </label>
       <div class="row">
         <label>Tanggal
@@ -125,15 +123,13 @@ function draw(){
   let y = H * +$('pos').value;
   const app = ($('app').value||'REMINDER').toUpperCase();
   const when = fmtDate($('when').value);
-  const items = $('body').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{
-    const [a,...r] = s.split('|'); return r.length ? {title:a.trim(), text:r.join('|').trim()} : {title:'', text:a.trim()};
-  });
+  const items = $('body').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).map(s=>({title:s, text:''}));
 
   items.forEach(it=>{
-    ctx.font = `500 44px ${FONT}`;
-    const lines = it.text ? wrap(it.text, cw - pad*2) : [];
-    const headH = 44, titleH = it.title ? 64 : 0, lh = 56;
-    const ch = pad + headH + 22 + titleH + lines.length*lh + pad - 8;
+    ctx.font = `700 46px ${FONT}`;
+    const tLines = wrap(it.title, cw - pad*2), tlh = 60;
+    const headH = 44, titleH = tLines.length*tlh;
+    const ch = pad + headH + 22 + titleH + pad - 8;
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
@@ -152,12 +148,8 @@ function draw(){
     ctx.textAlign = 'left';
 
     cy += headH + 22; ctx.textBaseline = 'top';
-    if(it.title){
-      ctx.fillStyle = '#000'; ctx.font = `700 46px ${FONT}`;
-      ctx.fillText(it.title, mx+pad, cy); cy += titleH;
-    }
-    ctx.fillStyle = 'rgba(0,0,0,.85)'; ctx.font = `400 44px ${FONT}`;
-    lines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += lh; });
+    ctx.fillStyle = '#000'; ctx.font = `700 46px ${FONT}`;
+    tLines.forEach(l=>{ ctx.fillText(l, mx+pad, cy); cy += tlh; });
     y += ch + gap;
   });
 }
