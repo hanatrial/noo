@@ -424,10 +424,11 @@ function vItem(){
   const cards=have.slice().sort((a,b)=>{const x=doi(byB[a]),y=doi(byB[b]);return (x==null)-(y==null)||(x==null?0:x-y)}).map(b=>{
     const r=byB[b],d=doi(r),to=br.filter(x=>cfg.allow(b,x)),fr=br.filter(x=>cfg.allow(x,b));
     const rt=to.length||fr.length?[to.length?"Kirim ke "+to.map(x=>BN[x]).join(", "):"",fr.length?"Terima dari "+fr.map(x=>BN[x]).join(", "):""].filter(Boolean).join(" · "):"Tanpa rute Ancab";
-    return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${BN[b]}</div><div class="brand">${esc(r.st)} · ${rt}</div></div>
+    return `<div class="card item"><div style="min-width:0"><div class="name">${BN[b]}</div><div class="brand">${esc(r.st)} · ${rt}</div></div>
+      <div class="duo"><div class="doi soh">${f1(r.soh)}<small>SOH CTN</small></div>
       <div class="doi ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></div></div>
       ${d!=null?meter(d):""}
-      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span><span><b>${fRp(r.apv)}</b>/bln</span></div>
+      <div class="facts"><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span><span><b>${fRp(r.apv)}</b>/bln</span></div>
       <div class="row">${isBonus(r)?'<span class="pill warn">Item bonus</span>':""}${intPill(r.int)}</div></div>`}).join("");
   const missing=br.filter(b=>!byB[b]).map(b=>BN[b]);
   const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
