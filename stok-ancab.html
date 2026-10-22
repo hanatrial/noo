@@ -81,7 +81,7 @@ h2{font:700 20px var(--f-display);margin:22px 0 10px;letter-spacing:.04em;text-t
 a{color:var(--accent)}
 select,input[type=number]{font:500 14px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:9px 10px;min-height:42px}
 input[type=number]{width:76px}
-nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab{border:0;border-top:4px solid transparent;background:transparent;color:#9FADB8;padding:7px 4px 9px;font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px}
 .tab .no{font:600 12px var(--f-mono);width:22px;height:22px;border-radius:4px;border:1.5px solid currentColor;display:grid;place-items:center}
 .tab[aria-selected="true"]{color:#fff;border-top-color:var(--rack)}
@@ -136,7 +136,7 @@ select,input[type=number]{border-radius:14px;border:1.5px solid var(--line);back
 #q{border-radius:999px!important;padding-inline:18px!important}
 .facts{font-weight:500}
 nav.tabs{inset:auto 12px calc(12px + env(safe-area-inset-bottom,0px)) 12px;max-width:416px;margin-inline:auto;padding:6px;gap:4px;background:var(--graphite);border-radius:32px;box-shadow:0 12px 32px rgba(16,24,40,.28)}
-.tab{border-top:0;border-radius:26px;color:#A3A8B2;padding:8px 4px;min-height:54px;font:600 11px var(--f-body);letter-spacing:0;text-transform:none}
+.tab{border-top:0;border-radius:26px;color:#A3A8B2;padding:8px 2px;min-height:54px;font:600 10px var(--f-body);letter-spacing:0;text-transform:none}
 .tab .no{border-radius:50%;border-width:1.5px}
 .tab[aria-selected="true"]{background:rgba(255,255,255,.12);color:#fff}
 .tab[aria-selected="true"] .no{background:var(--rack);border-color:var(--rack);color:#fff}
@@ -202,6 +202,7 @@ nav.tabs{background:rgba(20,28,37,.96);border:1px solid rgba(255,255,255,.12)}
   <button class="tab" role="tab" data-tab="doi" aria-selected="false"><span class="no">2</span>DOI rendah</button>
   <button class="tab" role="tab" data-tab="ancab" aria-selected="false"><span class="no">3</span>Saran Ancab</button>
   <button class="tab" role="tab" data-tab="item" aria-selected="false"><span class="no">4</span>Cek item</button>
+  <button class="tab" role="tab" data-tab="brg" aria-selected="false"><span class="no">5</span>Cek cabang</button>
 </nav>
 <div id="toast" class="toast" hidden></div>
 
@@ -222,11 +223,11 @@ const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
 const BN={PALU:"Palu",POSO:"Poso",KENDARI:"Kendari",MAMUJU:"Mamuju",BAUBAU:"Bau-Bau",MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
-  cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
+  cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,qb:"",sb:"BRANCH",more:false,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
 
 const $=s=>document.querySelector(s);
 const rowsC=cfg=>{const br=(cfg||RG()).br;return S.rows.filter(r=>r.cat===S.cat&&br.includes(r.b))};
-function fixBr(){const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[0]}
+function fixBr(){if(S.tab==="brg")return;const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[0]}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const f1=n=>n.toLocaleString("id-ID",{maximumFractionDigits:1});
 const f0=n=>Math.round(n).toLocaleString("id-ID");
@@ -384,8 +385,9 @@ function vAncab(){
 function paintHead(){
   $("#stamp").textContent=S.label;
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
-  const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item";
-  $("#sub").textContent=(S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
+  const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item"||S.tab==="brg";
+  const sl=document.querySelector('.seg[aria-label="Kanal"]');if(sl)sl.hidden=S.tab==="brg";
+  $("#sub").textContent=(S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":S.tab==="brg"?"Cek per cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
 }
 const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
 function itemIndex(){
@@ -449,21 +451,119 @@ function vItem(){
   <div class="stack">${cards}</div>
   ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
 }
-const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem()};
+/* ---------- Tab 5: Cek per cabang ---------- */
+const KATS=["TRADITIONAL","MODERN","BARANG BONUS","HB","WRP"];
+const KATSHORT={TRADITIONAL:"Trad",MODERN:"Modern","BARANG BONUS":"#PBD",HB:"HB",WRP:"WRP"};
+/* Semua cabang yang ada di data, urut sesuai BN lalu sisanya */
+function allBranches(){
+  const inData=[...new Set(S.rows.map(r=>r.b))];
+  const order=Object.keys(BN);
+  return inData.sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||String(a).localeCompare(String(b))});
+}
+function jenisKat(c){if(c==="BARANG BONUS")return "#PBD";if(c==="TRADITIONAL"||c==="MODERN")return "Reguler";return c}
+/* Daftar item satu cabang, di-group per SKU, difilter pencarian (S.qb) dan jenis (S.sb) */
+function branchRows(b){
+  const m={};
+  S.rows.filter(r=>r.b===b).forEach(r=>{
+    const k=r.code+"|"+r.sku;
+    const o=m[k]||(m[k]={k,code:r.code,sku:r.sku,brand:r.brand,cat:r.cat,st:r.st,soh:0,int:0,ap:0,apv:0,n:0});
+    o.soh+=r.soh;o.int+=r.int;o.ap+=r.ap;o.apv+=r.apv;o.n++;
+    if(r.st==="AKTIF")o.st="AKTIF";
+  });
+  return Object.values(m);
+}
+function branchList(){
+  const b=S.br||allBranches()[0];
+  const terms=S.qb.toLowerCase().split(/\s+/).filter(Boolean);
+  let list=branchRows(b);
+  if(S.sb==="BONUS")list=list.filter(r=>r.cat==="BARANG BONUS"||isBonus(r));
+  else if(S.sb!=="ALL")list=list.filter(r=>r.cat===S.sb);
+  if(terms.length)list=list.filter(r=>terms.every(t=>{
+    const bonus=isBonus(r)||r.cat==="BARANG BONUS";
+    const hay=(r.sku+" "+r.code+" "+r.brand+" "+r.cat+" "+jenisKat(r.cat)+" "+(bonus?"bonus pbd":""))
+      .toLowerCase().replace(/#/g,"");
+    return hay.includes(t.replace(/#/g,""));
+  }));
+  const empty=q=>q.soh<=0&&q.int<=0;
+  list.sort((a,c)=>{
+    if(S.sb==="ALL"&&a.cat!==c.cat)return KATS.indexOf(a.cat)-KATS.indexOf(c.cat);
+    if(empty(a)!==empty(c))return empty(a)?1:-1;
+    return c.soh-a.soh||c.apv-a.apv;
+  });
+  return{b,list,all:branchRows(b)};
+}
+function vBranch(){
+  const brs=allBranches();
+  if(!S.br||!brs.includes(S.br))S.br=brs[0]||null;
+  const chips=brs.map(b=>{
+    const n=Object.keys(S.rows.filter(r=>r.b===b).reduce((m,r)=>(m[r.code+"|"+r.sku]=1,m),{})).length;
+    return `<button class="chip" data-br="${b}" aria-pressed="${b===S.br}">${BN[b]||b}<span class="n">${n}</span></button>`;
+  }).join("");
+  const {b,list,all}=branchList();
+  const sum=k=>all.reduce((s,r)=>s+r[k],0);
+  const katTiles=KATS.map(k=>{const g=all.filter(r=>r.cat===k);const soh=g.reduce((s,r)=>s+r.soh,0);
+    return `<div class="stat"><span class="v">${f1(soh)}</span><span class="k">${KATSHORT[k]||k} · ${g.length} item</span></div>`}).join("");
+  const jenis=`<select id="sb" aria-label="Jenis item">
+    <option value="ALL"${S.sb==="ALL"?" selected":""}>Semua jenis</option>
+    <option value="TRADITIONAL"${S.sb==="TRADITIONAL"?" selected":""}>Traditional</option>
+    <option value="MODERN"${S.sb==="MODERN"?" selected":""}>Modern</option>
+    <option value="BONUS"${S.sb==="BONUS"?" selected":""}>#PBD / item bonus</option>
+    <option value="HB"${S.sb==="HB"?" selected":""}>HB</option>
+    <option value="WRP"${S.sb==="WRP"?" selected":""}>WRP</option></select>`;
+  const cards=list.map(r=>{
+    const bonus=r.cat==="BARANG BONUS"||isBonus(r);
+    const d=doi(r);
+    return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div>
+      <div class="brand">${esc(r.brand)} · ${esc(r.cat)}</div></div>
+      <div class="doi ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></div></div>
+      ${d!=null?meter(d):""}
+      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>Intransit <b>${f1(r.int)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span></div>
+      <div class="row">${bonus?'<span class="pill warn">Item bonus</span>':""}${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
+  });
+  const LIMIT=60;
+  const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
+  const moreBtn=cards.length>shown?`<button class="btn ghost" id="moreb" style="width:100%;margin-top:10px">Tampilkan semua ${cards.length} item</button>`:"";
+  return `<h2>Cek cabang</h2>
+  <div class="chips" role="group" aria-label="Cabang">${chips}</div>
+  <div class="card stack" style="margin-top:10px">
+    <input type="search" id="qb" value="${esc(S.qb)}" placeholder="Cari item di cabang ini, mis. #pbd / jeruk / hilo" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;min-height:46px">
+    ${jenis}
+    <div class="note">Ketik <b>#pbd</b> atau pilih jenis <b>#PBD / item bonus</b> untuk melihat item bonus di ${b?esc(BN[b]||b):"cabang ini"}.</div>
+  </div>
+  ${b?`<div class="card" style="margin-top:10px"><div class="grid2">
+    <div class="stat"><span class="v">${f0(sum("soh"))}</span><span class="k">ctn stok ${esc(BN[b]||b)}</span></div>
+    <div class="stat"><span class="v">${f0(sum("int"))}</span><span class="k">ctn intransit</span></div>
+    <div class="stat"><span class="v">${all.length}</span><span class="k">SKU tercatat</span></div>
+    <div class="stat"><span class="v">${all.filter(r=>r.soh>0).length}</span><span class="k">SKU ada stok</span></div>
+    ${katTiles}</div></div>
+  <div class="note" style="margin:14px 0 8px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${S.sb==="ALL"?"":` · jenis ${esc(S.sb==="BONUS"?"#PBD / item bonus":S.sb)}`}${list.length>shown?` · tampil ${shown} teratas`:""}</div>
+  <div class="stack">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
+  <div style="height:24px"></div>${moreBtn}`
+  :'<div class="card empty" style="margin-top:12px">Belum ada data cabang.</div>'}`;
+}
+const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem(),brg:()=>vBranch()};
 function render(){fixBr();
   paintHead();
   $("#view").innerHTML=VIEWS[S.tab]();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   window.scrollTo(0,0);
 }
-function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHTML=VIEWS[S.tab]();window.scrollTo(0,y)}
+function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHTML=VIEWS[S.tab]();restoreFocus();window.scrollTo(0,y)}
+/* Search di tab 4 & 5 harus tetap fokus walau kartu di-render ulang */
+function restoreFocus(){
+  const id=S.tab==="brg"?"#qb":(S.tab==="item"?"#q":null);if(!id)return;
+  const el=document.querySelector(id);if(!el)return;
+  el.focus({preventScroll:true});
+  try{el.setSelectionRange(el.value.length,el.value.length)}catch(e){}
+}
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
   const pk=e.target.closest(".pick");if(pk){S.item=pk.dataset.k;refresh();return}
   const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
-  const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;refresh();return}
+  const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;S.more=false;refresh();return}
+  if(e.target.id==="moreb"){S.more=true;refresh();return}
   if(e.target.id==="pull"){e.target.disabled=true;e.target.textContent="Menarik ...";pullLatest(true).finally(()=>{const b=$("#pull");if(b){b.disabled=false;b.textContent="Tarik data terbaru"}});return}
   if(e.target.id==="reset"){location.reload();return}
   if(e.target.id==="copy"){
@@ -476,7 +576,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tap")){e.preventDefault();e.target.click()}});
-document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const m=$("#matches");if(m)m.innerHTML=matchesHtml()}});
+document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const m=$("#matches");if(m)m.innerHTML=matchesHtml()}else if(e.target.id==="qb"){S.qb=e.target.value;const y=window.scrollY;refresh();window.scrollTo(0,y)}});
 document.addEventListener("change",e=>{
   const id=e.target.id;
   if(id==="thr"){S.thr=Math.max(1,+e.target.value||30);refresh()}
@@ -486,6 +586,7 @@ document.addEventListener("change",e=>{
   else if(id==="keep"){S.keep=Math.max(0,+e.target.value||0);refresh()}
   else if(id==="add"){S.add=Math.max(1,+e.target.value||30);refresh()}
   else if(id==="file"){loadFile(e.target.files[0])}
+  else if(id==="sb"){S.sb=e.target.value;const y=window.scrollY;refresh();window.scrollTo(0,y)}
 });
 
 async function loadFile(f){
