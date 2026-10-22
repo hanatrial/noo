@@ -235,7 +235,7 @@ const doi=r=>r.ap>0?r.soh/r.ap*30:null;
 const sev=d=>d<15?"crit":"warn";
 /* Item bonus: paket (10+1), (10S FREE 1S), FREE HANGER, atau bonus isi lain.
    Dipakai tab 4 (Cek item) supaya item bonus tetap ikut dihitung, bukan dilewati. */
-const isBonus=r=>/\(\s*\d+\s*\+\s*\d+\s*\)|\bFREE\s*\d+\s*S?\b|FREE\s*HANGER|GRATIS/i.test((r&&r.sku)||"");
+const isBonus=r=>r&&(r.st==="BARANG BONUS"||/\(\s*\d+\s*\+\s*\d+\s*\)|\bFREE\s*\d+\s*S?\b|FREE\s*HANGER|GRATIS/i.test(r.sku||""));
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
 
 /* Item DOI rendah per cabang */
@@ -249,7 +249,7 @@ function lowItems(b){
 function compute(cfg,only,all){
   cfg=cfg||RG();const br=cfg.br,al=cfg.allow;
   const g={};
-  rowsC(cfg).filter(r=>all||S.prun||r.st==="AKTIF").forEach(r=>{const k=r.code+"|"+r.sku;if(only&&k!==only)return;(g[k]=g[k]||{})[r.b]=r});
+  (all?S.rows:rowsC(cfg)).filter(r=>all||S.prun||r.st==="AKTIF").forEach(r=>{const k=r.code+"|"+r.sku;if(only&&k!==only)return;(g[k]=g[k]||{})[r.b]=r});
   const moves=[],unmet=[];
   Object.values(g).forEach(m=>{
     const sur={},sent={};
@@ -385,18 +385,18 @@ function paintHead(){
   $("#stamp").textContent=S.label;
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
   const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item";
-  $("#sub").textContent=CN[S.cat]+" · "+(S.tab==="item"?"Sulawesi, semua cabang · semua item":BRS().map(b=>BN[b]).join(" · "));
+  $("#sub").textContent=(S.tab==="item"?"Sulawesi, semua cabang · semua item (Traditional & Modern)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
 }
 const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
 function itemIndex(){
   const items={};
-  rowsC(REG.SULAWESI).forEach(r=>{const k=r.code+"|"+r.sku;const it=items[k]||(items[k]={k,sku:r.sku,brand:r.brand,apv:0});it.apv+=r.apv});
+  S.rows.forEach(r=>{const k=r.code+"|"+r.sku;const it=items[k]||(items[k]={k,sku:r.sku,brand:r.brand,apv:0});it.apv+=r.apv});
   return{items,list:Object.values(items)};
 }
 function matchesHtml(){
   const {list}=itemIndex();
   const terms=S.q.toLowerCase().split(/\s+/).filter(Boolean);
-  const f=list.filter(it=>terms.every(t=>(it.sku+" "+it.brand).toLowerCase().includes(t))).sort((a,b)=>b.apv-a.apv);
+  const f=list.filter(it=>terms.every(t=>(it.sku+" "+it.brand+" "+(isBonus(it)?"bonus":"")).toLowerCase().includes(t))).sort((a,b)=>b.apv-a.apv);
   const head=terms.length?f.length+" item cocok"+(f.length>8?", 8 teratas":""):"Item dengan nilai AP3M tertinggi";
   return `<div class="note" style="margin:4px 0">${head}</div>`+f.slice(0,8).map(it=>`<button type="button" class="pick" data-k="${esc(it.k)}" aria-pressed="${it.k===S.item}"><b>${esc(it.sku)}</b><span class="note">${esc(it.brand)} · AP3M ${fRp(it.apv)}/bln semua cabang${isBonus(it)?" · item bonus":""}</span></button>`).join("")||'<div class="empty">Tidak ada item yang cocok.</div>';
 }
@@ -409,7 +409,7 @@ function vItem(){
   <div class="card stack"><input type="search" id="q" value="${esc(S.q)}" placeholder="Cari item, mis. jeruk peras" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;min-height:46px">
   <div id="matches" class="stack" style="gap:8px">${matchesHtml()}</div></div>`;
   if(!it)return search+'<div class="card empty" style="margin-top:12px">Belum ada data item.</div>';
-  const byB={};rowsC(cfg).filter(r=>r.code+"|"+r.sku===S.item).forEach(r=>byB[r.b]=r);
+  const byB={};S.rows.filter(r=>r.code+"|"+r.sku===S.item).forEach(r=>byB[r.b]=r);
   const have=br.filter(b=>byB[b]);
   const sumSoh=have.reduce((s,b)=>s+byB[b].soh,0),sumInt=have.reduce((s,b)=>s+byB[b].int,0),sumAp=have.reduce((s,b)=>s+byB[b].ap,0),sumApv=have.reduce((s,b)=>s+byB[b].apv,0);
   const dAll=sumAp>0?sumSoh/sumAp*30:null;
@@ -436,7 +436,7 @@ function vItem(){
     +(lowNoRoute.length?`<div class="card note" style="margin-top:10px"><b>DOI rendah tanpa rute Ancab:</b> ${lowNoRoute.join(", ")}. Perlu order dari pusat.</div>`:"");
   return search+`
   <h2>${esc(it.sku)}</h2>
-  <div class="note" style="margin:-6px 0 10px">${esc(it.brand)} · ${CN[S.cat]}${bonusCount?` · <b>item bonus</b> (${bonusCount} cabang)`:" · item non-bonus"}</div>
+  <div class="note" style="margin:-6px 0 10px">${esc(it.brand)}${bonusCount?` · <b>item bonus</b> (${bonusCount} cabang)`:" · item non-bonus"}</div>
   <div class="card"><div class="grid2">
     <div class="stat"><span class="v">${f0(sumSoh)}</span><span class="k">ctn stok semua cabang</span></div>
     <div class="stat"><span class="v">${f0(sumInt)}</span><span class="k">ctn intransit</span></div>
