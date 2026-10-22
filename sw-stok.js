@@ -1,5 +1,5 @@
 // Service worker aplikasi Stok Sulsel: data dan halaman coba jaringan dulu, cadangan dari cache
-const C = "stok-v6";
+const C = "stok-v7";
 const SHELL = ["./stok-ancab.html", "./manifest.webmanifest", "./icon-192.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

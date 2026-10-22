@@ -66,6 +66,10 @@ h2{font:700 20px var(--f-display);margin:22px 0 10px;letter-spacing:.04em;text-t
 .doi{flex:0 0 auto;min-width:66px;padding:7px 8px 6px;border-radius:4px;text-align:center;font:700 26px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:#fff}
 .doi small{display:block;font:600 10px var(--f-display);letter-spacing:.12em;margin-top:3px;opacity:.9}
 .doi.crit{background:var(--crit)} .doi.warn{background:var(--warn-bg);color:#1A1200}
+/* Tab 5: kotak SOH dibuat sama besar dengan kotak DOI */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.duo .doi{min-width:0;padding:9px 8px 8px}
+.duo .doi.soh{background:var(--steel);color:#fff}
 .meter{position:relative;height:10px;border-radius:2px;background:var(--bg);border:1px solid var(--line)}
 .meter i{position:absolute;inset:0 auto 0 0;display:block}
 .meter u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.6}
@@ -495,12 +499,13 @@ function vBranch(){
   const sum=k=>all.reduce((s,r)=>s+r[k],0);
   const cards=list.map(r=>{
     const d=doi(r);
-    return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div>
-      <div class="brand">${esc(r.brand)} · ${esc(r.cat)}</div></div>
+    return `<div class="card item"><div class="name">${esc(r.sku)}</div>
+      <div class="brand">${esc(r.brand)} · ${esc(r.cat)}</div>
+      <div class="duo"><div class="doi soh">${f1(r.soh)}<small>SOH CTN</small></div>
       <div class="doi ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></div></div>
       ${d!=null?meter(d):""}
-      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>Intransit <b>${f1(r.int)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span></div>
-      <div class="row"><span class="pill muted">${esc(r.cat)}</span>${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
+      <div class="facts"><span>Intransit <b>${f1(r.int)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span></div>
+      <div class="row">${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
   });
   const LIMIT=60;
   const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
