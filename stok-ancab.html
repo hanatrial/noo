@@ -223,7 +223,7 @@ const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
 const BN={PALU:"Palu",POSO:"Poso",KENDARI:"Kendari",MAMUJU:"Mamuju",BAUBAU:"Bau-Bau",MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
-  cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,qb:"",sb:"BRANCH",more:false,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
+  cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,qb:"",more:false,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0}))};
 
 const $=s=>document.querySelector(s);
 const rowsC=cfg=>{const br=(cfg||RG()).br;return S.rows.filter(r=>r.cat===S.cat&&br.includes(r.b))};
@@ -452,16 +452,13 @@ function vItem(){
   ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
 }
 /* ---------- Tab 5: Cek per cabang ---------- */
-const KATS=["TRADITIONAL","MODERN","BARANG BONUS","HB","WRP"];
-const KATSHORT={TRADITIONAL:"Trad",MODERN:"Modern","BARANG BONUS":"#PBD",HB:"HB",WRP:"WRP"};
 /* Semua cabang yang ada di data, urut sesuai BN lalu sisanya */
 function allBranches(){
   const inData=[...new Set(S.rows.map(r=>r.b))];
   const order=Object.keys(BN);
   return inData.sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||String(a).localeCompare(String(b))});
 }
-function jenisKat(c){if(c==="BARANG BONUS")return "#PBD";if(c==="TRADITIONAL"||c==="MODERN")return "Reguler";return c}
-/* Daftar item satu cabang, di-group per SKU, difilter pencarian (S.qb) dan jenis (S.sb) */
+/* Daftar item satu cabang, di-group per SKU, difilter pencarian (S.qb) */
 function branchRows(b){
   const m={};
   S.rows.filter(r=>r.b===b).forEach(r=>{
@@ -476,17 +473,12 @@ function branchList(){
   const b=S.br||allBranches()[0];
   const terms=S.qb.toLowerCase().split(/\s+/).filter(Boolean);
   let list=branchRows(b);
-  if(S.sb==="BONUS")list=list.filter(r=>r.cat==="BARANG BONUS"||isBonus(r));
-  else if(S.sb!=="ALL")list=list.filter(r=>r.cat===S.sb);
   if(terms.length)list=list.filter(r=>terms.every(t=>{
-    const bonus=isBonus(r)||r.cat==="BARANG BONUS";
-    const hay=(r.sku+" "+r.code+" "+r.brand+" "+r.cat+" "+jenisKat(r.cat)+" "+(bonus?"bonus pbd":""))
-      .toLowerCase().replace(/#/g,"");
-    return hay.includes(t.replace(/#/g,""));
+    const hay=(r.sku+" "+r.code+" "+r.brand+" "+r.cat).toLowerCase();
+    return hay.includes(t)||hay.replace(/#/g,"").includes(t.replace(/#/g,""));
   }));
   const empty=q=>q.soh<=0&&q.int<=0;
   list.sort((a,c)=>{
-    if(S.sb==="ALL"&&a.cat!==c.cat)return KATS.indexOf(a.cat)-KATS.indexOf(c.cat);
     if(empty(a)!==empty(c))return empty(a)?1:-1;
     return c.soh-a.soh||c.apv-a.apv;
   });
@@ -501,24 +493,14 @@ function vBranch(){
   }).join("");
   const {b,list,all}=branchList();
   const sum=k=>all.reduce((s,r)=>s+r[k],0);
-  const katTiles=KATS.map(k=>{const g=all.filter(r=>r.cat===k);const soh=g.reduce((s,r)=>s+r.soh,0);
-    return `<div class="stat"><span class="v">${f1(soh)}</span><span class="k">${KATSHORT[k]||k} · ${g.length} item</span></div>`}).join("");
-  const jenis=`<select id="sb" aria-label="Jenis item">
-    <option value="ALL"${S.sb==="ALL"?" selected":""}>Semua jenis</option>
-    <option value="TRADITIONAL"${S.sb==="TRADITIONAL"?" selected":""}>Traditional</option>
-    <option value="MODERN"${S.sb==="MODERN"?" selected":""}>Modern</option>
-    <option value="BONUS"${S.sb==="BONUS"?" selected":""}>#PBD / item bonus</option>
-    <option value="HB"${S.sb==="HB"?" selected":""}>HB</option>
-    <option value="WRP"${S.sb==="WRP"?" selected":""}>WRP</option></select>`;
   const cards=list.map(r=>{
-    const bonus=r.cat==="BARANG BONUS"||isBonus(r);
     const d=doi(r);
     return `<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div>
       <div class="brand">${esc(r.brand)} · ${esc(r.cat)}</div></div>
       <div class="doi ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></div></div>
       ${d!=null?meter(d):""}
       <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>Intransit <b>${f1(r.int)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span></div>
-      <div class="row">${bonus?'<span class="pill warn">Item bonus</span>':""}${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
+      <div class="row"><span class="pill muted">${esc(r.cat)}</span>${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
   });
   const LIMIT=60;
   const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
@@ -527,16 +509,13 @@ function vBranch(){
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
   <div class="card stack" style="margin-top:10px">
     <input type="search" id="qb" value="${esc(S.qb)}" placeholder="Cari item di cabang ini, mis. #pbd / jeruk / hilo" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;min-height:46px">
-    ${jenis}
-    <div class="note">Ketik <b>#pbd</b> atau pilih jenis <b>#PBD / item bonus</b> untuk melihat item bonus di ${b?esc(BN[b]||b):"cabang ini"}.</div>
   </div>
   ${b?`<div class="card" style="margin-top:10px"><div class="grid2">
     <div class="stat"><span class="v">${f0(sum("soh"))}</span><span class="k">ctn stok ${esc(BN[b]||b)}</span></div>
     <div class="stat"><span class="v">${f0(sum("int"))}</span><span class="k">ctn intransit</span></div>
     <div class="stat"><span class="v">${all.length}</span><span class="k">SKU tercatat</span></div>
-    <div class="stat"><span class="v">${all.filter(r=>r.soh>0).length}</span><span class="k">SKU ada stok</span></div>
-    ${katTiles}</div></div>
-  <div class="note" style="margin:14px 0 8px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${S.sb==="ALL"?"":` · jenis ${esc(S.sb==="BONUS"?"#PBD / item bonus":S.sb)}`}${list.length>shown?` · tampil ${shown} teratas`:""}</div>
+    <div class="stat"><span class="v">${all.filter(r=>r.soh>0).length}</span><span class="k">SKU ada stok</span></div></div></div>
+  <div class="note" style="margin:14px 0 8px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}</div>
   <div class="stack">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
   <div style="height:24px"></div>${moreBtn}`
   :'<div class="card empty" style="margin-top:12px">Belum ada data cabang.</div>'}`;
@@ -586,7 +565,6 @@ document.addEventListener("change",e=>{
   else if(id==="keep"){S.keep=Math.max(0,+e.target.value||0);refresh()}
   else if(id==="add"){S.add=Math.max(1,+e.target.value||30);refresh()}
   else if(id==="file"){loadFile(e.target.files[0])}
-  else if(id==="sb"){S.sb=e.target.value;const y=window.scrollY;refresh();window.scrollTo(0,y)}
 });
 
 async function loadFile(f){
