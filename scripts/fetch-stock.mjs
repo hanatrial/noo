@@ -49,12 +49,15 @@ if (!ws) throw new Error("Sheet 'Update Stock' tidak ada");
 const a = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
 
 const map = { "MAKASSAR": "MAKASSAR", "BONE": "BONE", "PARE-PARE": "PAREPARE", "PAREPARE": "PAREPARE", "PALOPO": "PALOPO", "MANADO": "MANADO", "GORONTALO": "GORONTALO", "PALU": "PALU", "POSO": "POSO", "KENDARI": "KENDARI", "MAMUJU": "MAMUJU", "BAU-BAU": "BAUBAU" };
+/* Semua kategori diambil: TRADITIONAL, MODERN, BARANG BONUS (#PBD), HB, WRP.
+   Tab 4 (Cek item) memakai semuanya; tab 1-3 tetap filter TRADITIONAL/MODERN. */
+const KATEGORI = new Set(["TRADITIONAL", "MODERN", "BARANG BONUS", "HB", "WRP"]);
 const r2 = n => Math.round((+n || 0) * 100) / 100;
 const rows = [];
 for (const r of a) {
   const b = map[String(r[1] || "").trim().toUpperCase()];
   const cat = String(r[2] || "").trim().toUpperCase();
-  if (b && (cat === "TRADITIONAL" || cat === "MODERN"))
+  if (b && KATEGORI.has(cat))
     rows.push([b, String(r[4] || ""), String(r[6] || "").trim(), String(r[3] || "").trim(),
       String(r[7] || "").trim().toUpperCase(), r2(r[11]), r2(r[13]), r2(r[23]), cat, Math.round(+r[24] || 0), Math.round(+r[12] || 0)]);
 }

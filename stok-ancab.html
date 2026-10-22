@@ -385,7 +385,7 @@ function paintHead(){
   $("#stamp").textContent=S.label;
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
   const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item";
-  $("#sub").textContent=(S.tab==="item"?"Sulawesi, semua cabang · semua item (Traditional & Modern)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
+  $("#sub").textContent=(S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
 }
 const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
 function itemIndex(){
