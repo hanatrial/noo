@@ -262,6 +262,11 @@ const sev=d=>d<15?"crit":"warn";
 /* Item bonus: paket (10+1), (10S FREE 1S), FREE HANGER, atau bonus isi lain.
    Dipakai tab 4 (Cek item) supaya item bonus tetap ikut dihitung, bukan dilewati. */
 const isBonus=r=>r&&(r.st==="BARANG BONUS"||/\(\s*\d+\s*\+\s*\d+\s*\)|\bFREE\s*\d+\s*S?\b|FREE\s*HANGER|GRATIS/i.test(r.sku||""));
+/* Item B- (barang bonus): kode atau nama SKU diawali "B-".
+   Untuk item ini DOI tidak dipakai, diganti persentase sisa stok = stok / (MTD + stok). */
+const isBItem=r=>r&&/^B-/i.test(String(r.sku||"").trim());
+const pctLeft=r=>{const t=(r.mtd>0?r.mtd:0)+(r.soh>0?r.soh:0);return t>0?Math.min(100,r.soh/t*100):null};
+const pctCls=p=>p==null?"na":p<70?"crit":p<85?"warn":"ok";
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
 
 /* Item DOI rendah per cabang */
@@ -444,16 +449,21 @@ function vItem(){
   const have=br.filter(b=>byB[b]);
   const sumSoh=have.reduce((s,b)=>s+byB[b].soh,0),sumInt=have.reduce((s,b)=>s+byB[b].int,0),sumAp=have.reduce((s,b)=>s+byB[b].ap,0),sumApv=have.reduce((s,b)=>s+byB[b].apv,0);
   const sumMtd=have.reduce((s,b)=>s+byB[b].mtd,0),sumMtdv=have.reduce((s,b)=>s+byB[b].mtdv,0);
+  const anyB=have.some(b=>isBItem(byB[b]));
   const dAll=sumAp>0?sumSoh/sumAp*30:null;
+  const pcAll=sumMtd+sumSoh>0?sumSoh/(sumMtd+sumSoh)*100:null;
   const c=compute(cfg,S.item,true);
   const bonusCount=have.filter(b=>isBonus(byB[b])).length;
   const cards=have.slice().sort((a,b)=>{const x=doi(byB[a]),y=doi(byB[b]);return (x==null)-(y==null)||(x==null?0:x-y)}).map(b=>{
     const r=byB[b],d=doi(r),to=br.filter(x=>cfg.allow(b,x)),fr=br.filter(x=>cfg.allow(x,b));
     const rt=to.length||fr.length?[to.length?"Kirim ke "+to.map(x=>BN[x]).join(", "):"",fr.length?"Terima dari "+fr.map(x=>BN[x]).join(", "):""].filter(Boolean).join(" · "):"Tanpa rute Ancab";
-    const tag=[isBonus(r)?"item bonus":"",r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?r.st:""].filter(Boolean).join(" · ");
+    const tag=[...new Set([isBonus(r)?"item bonus":"",r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?r.st:""].filter(Boolean))].join(" · ");
+    const bIt=isBItem(r),pc=bIt?pctLeft(r):null;
     return `<div class="slim"><span class="nm">${BN[b]}</span>
-      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></span></span>
-      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · MTD <b>${f1(r.mtd)}</b> ctn · ${esc(rt)}${tag?" · "+esc(tag):""}</span></div>`}).join("");
+      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span>${bIt
+        ?`<span class="d ${pctCls(pc)}">${pc==null?"–":f0(pc)+"%"}<small>SISA STOK</small></span>`
+        :`<span class="d ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></span>`}</span>
+      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · MTD <b>${f1(r.mtd)}</b> ctn${bIt?` · sisa <b>${pc==null?"–":f0(pc)+"%"}</b> dari (MTD + stok)`:""} · ${esc(rt)}${tag?" · "+esc(tag):""}</span></div>`}).join("");
   const missing=br.filter(b=>!byB[b]).map(b=>BN[b]);
   const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="slim"><span class="nm">${BN[m.from]} → ${BN[m.to]}</span>
     <span class="rt"><span class="v">${f0(m.q)}<small>CTN</small></span><span class="v">≈ ${fRp(m.v)}<small>NILAI</small></span></span>
@@ -470,7 +480,7 @@ function vItem(){
   <div class="card"><div class="mini">
     <div><div class="v">${f0(sumSoh)}</div><div class="k">ctn stok semua cabang</div></div>
     <div><div class="v">${f0(sumInt)}</div><div class="k">ctn intransit</div></div>
-    <div><div class="v">${dAll==null?"–":f0(dAll)}</div><div class="k">hari DOI gabungan</div></div>
+    <div><div class="v">${anyB?(pcAll==null?"–":f0(pcAll)+"%"):(dAll==null?"–":f0(dAll))}</div><div class="k">${anyB?"sisa stok dari (MTD + stok)":"hari DOI gabungan"}</div></div>
     <div><div class="v">${f0(sumMtd)}</div><div class="k">ctn MTD bulan ini</div></div>
     <div><div class="v">${fRp(sumMtdv)}</div><div class="k">nilai MTD</div></div>
     <div><div class="v">${fRp(sumApv)}</div><div class="k">AP3M per bulan</div></div></div></div>
@@ -478,7 +488,7 @@ function vItem(){
   <p class="note" style="margin:-4px 0 10px">${cfg.rule} Semua item dihitung di sini, termasuk <b>item bonus</b> (paket 10+1 / FREE) dan item non-aktif, jadi rekomendasi selalu keluar. Pengirim tetap punya minimal ${S.keep} hari, penerima ditambah maksimal ${S.add} hari. Aturan bisa diubah di tab Saran Ancab.</p>
   ${bal}
   <h2>Per cabang</h2>
-  <p class="note" style="margin:-4px 0 8px">MTD = penjualan bulan berjalan (ctn) dari file stok, bukan dari order.</p>
+  <p class="note" style="margin:-4px 0 8px">MTD = penjualan bulan berjalan (ctn) dari file stok, bukan dari order.${anyB?" Item <b>B-</b> (barang bonus) tidak memakai DOI, diganti <b>persentase sisa stok</b> = stok ÷ (MTD + stok).":""}</p>
   <div class="slims">${cards}</div>
   ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
 }
@@ -494,8 +504,8 @@ function branchRows(b){
   const m={};
   S.rows.filter(r=>r.b===b).forEach(r=>{
     const k=r.code+"|"+r.sku;
-    const o=m[k]||(m[k]={k,code:r.code,sku:r.sku,brand:r.brand,cat:r.cat,st:r.st,soh:0,int:0,ap:0,apv:0,n:0});
-    o.soh+=r.soh;o.int+=r.int;o.ap+=r.ap;o.apv+=r.apv;o.n++;
+    const o=m[k]||(m[k]={k,code:r.code,sku:r.sku,brand:r.brand,cat:r.cat,st:r.st,soh:0,int:0,ap:0,apv:0,mtd:0,mtdv:0,n:0});
+    o.soh+=r.soh;o.int+=r.int;o.ap+=r.ap;o.apv+=r.apv;o.mtd+=r.mtd;o.mtdv+=r.mtdv;o.n++;
     if(r.st==="AKTIF")o.st="AKTIF";
   });
   return Object.values(m);
@@ -526,10 +536,13 @@ function vBranch(){
   const sum=k=>all.reduce((s,r)=>s+r[k],0);
   const cards=list.map(r=>{
     const d=doi(r);
-    const tag=[esc(r.brand),esc(r.cat),r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?esc(r.st):""].filter(Boolean).join(" · ");
+    const bIt=isBItem(r),pc=bIt?pctLeft(r):null;
+    const tag=[...new Set([esc(r.brand),esc(r.cat),r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?esc(r.st):""].filter(Boolean))].join(" · ");
     return `<div class="slim"><span class="nm">${esc(r.sku)}</span>
-      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></span></span>
-      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · ${tag}</span></div>`;
+      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span>${bIt
+        ?`<span class="d ${pctCls(pc)}">${pc==null?"–":f0(pc)+"%"}<small>SISA STOK</small></span>`
+        :`<span class="d ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></span>`}</span>
+      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn${bIt?` · MTD <b>${f1(r.mtd)}</b> ctn · sisa <b>${pc==null?"–":f0(pc)+"%"}</b> dari (MTD + stok)`:""} · ${tag}</span></div>`;
   });
   const LIMIT=60;
   const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
@@ -543,7 +556,7 @@ function vBranch(){
     <div><div class="v">${f0(sum("soh"))}</div><div class="k">ctn stok ${esc(BN[b]||b)}</div></div>
     <div><div class="v">${f0(sum("int"))}</div><div class="k">ctn intransit</div></div>
     <div><div class="v">${all.filter(r=>r.soh>0).length}</div><div class="k">SKU ada stok dari ${all.length}</div></div></div></div>
-  <div class="note" style="margin:10px 0 6px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}</div>
+  <div class="note" style="margin:10px 0 6px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}${list.some(r=>isBItem(r))?" · item <b>B-</b> pakai sisa stok (%) bukan DOI":""}</div>
   <div class="slims">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
   <div style="height:24px"></div>${moreBtn}`
   :'<div class="card empty" style="margin-top:12px">Belum ada data cabang.</div>'}`;
