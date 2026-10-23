@@ -180,25 +180,37 @@ nav.tabs{background:rgba(20,28,37,.96);border:1px solid rgba(255,255,255,.12)}
 @media(min-width:700px){header h1{font-size:28px}}
 
 /* Tab 4 & 5: daftar tipis, supaya semua cabang / semua item muat dalam satu layar */
-.slims{display:flex;flex-direction:column;gap:6px}
-.slim{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid #DDE1E7;border-left:4px solid var(--steel);border-radius:10px;padding:5px 10px;color:var(--ink);font:500 13px var(--f-body);box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.slims{display:flex;flex-direction:column;gap:4px}
+.slim{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:0;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid #DDE1E7;border-left:3px solid var(--steel);border-radius:8px;padding:2px 8px;color:var(--ink);font:500 12px var(--f-body);box-shadow:0 1px 1px rgba(16,24,40,.04)}
 button.slim{cursor:pointer;min-height:0}
 button.slim:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .slim.on{border-left-color:var(--rack);background:var(--bg)}
-.slim .nm{font:700 13px/1.25 var(--f-body);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.slim .sb{grid-column:1;font:500 11px/1.3 var(--f-mono);color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slim .nm{font:700 12.5px/1.2 var(--f-body);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slim .sb{grid-column:1;font:500 10px/1.2 var(--f-mono);color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slim .sb b{color:var(--ink);font-weight:600}
-.slim .rt{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-.slim .v{font:700 15px/1 var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;min-width:46px}
-.slim .v small{display:block;font:600 9px var(--f-display);letter-spacing:.06em;color:var(--muted);margin-top:2px}
-.slim .d{min-width:44px;text-align:center;border-radius:8px;padding:4px 6px;font:700 15px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:#fff}
-.slim .d small{display:block;font:600 8px var(--f-display);letter-spacing:.06em;margin-top:2px;opacity:.92}
+.slim .rt{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.slim .v{font:700 13px/1 var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;min-width:38px}
+.slim .v small{display:block;font:600 8px var(--f-display);letter-spacing:.04em;color:var(--muted);margin-top:1px}
+.slim .d{min-width:40px;text-align:center;border-radius:6px;padding:3px 5px;font:700 13px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:#fff}
+.slim .d small{display:block;font:600 7.5px var(--f-display);letter-spacing:.04em;margin-top:1px;opacity:.92}
 .slim .d.crit{background:var(--crit)}.slim .d.warn{background:var(--warn-bg);color:#1A1200}
 .slim .d.ok{background:var(--ok)}.slim .d.na{background:var(--line);color:var(--muted)}
 .mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
 .mini.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .mini .v{font:700 18px/1.1 var(--f-mono);font-variant-numeric:tabular-nums}
 .mini .k{font-size:11px;color:var(--muted);line-height:1.25;margin-top:1px}
+/* Tab 4 & 5: header dipadatkan supaya daftar dapat ruang lebih banyak */
+body[data-tab="item"] header,body[data-tab="brg"] header{padding:calc(10px + env(safe-area-inset-top,0px)) 16px 8px}
+body[data-tab="item"] header .dist-badge,body[data-tab="brg"] header .dist-badge{display:none}
+body[data-tab="item"] header h1,body[data-tab="brg"] header h1{font-size:18px;line-height:1.15}
+body[data-tab="item"] header .sub,body[data-tab="brg"] header .sub{font-size:11px;margin-top:2px}
+body[data-tab="item"] header::after,body[data-tab="brg"] header::after{height:4px;margin:8px -16px -8px}
+body[data-tab="item"] header .stamp,body[data-tab="brg"] header .stamp{font-size:10px}
+body[data-tab="item"] header .stamp b,body[data-tab="brg"] header .stamp b{font-size:11px}
+body[data-tab="item"] .segs,body[data-tab="brg"] .segs{margin-top:0;gap:4px}
+body[data-tab="item"] .segb,body[data-tab="brg"] .segb{min-height:28px;font-size:12px}
+body[data-tab="item"] h2,body[data-tab="brg"] h2{font-size:15px;margin:12px 0 6px}
+body[data-tab="item"] h2::before,body[data-tab="brg"] h2::before{height:14px;width:6px}
 </style>
 
 </head>
@@ -463,7 +475,7 @@ function vItem(){
       <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span>${bIt
         ?`<span class="d ${pctCls(pc)}">${pc==null?"–":f0(pc)+"%"}<small>SISA STOK</small></span>`
         :`<span class="d ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></span>`}</span>
-      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · MTD <b>${f1(r.mtd)}</b> ctn${bIt?` · sisa <b>${pc==null?"–":f0(pc)+"%"}</b> dari (MTD + stok)`:""} · ${esc(rt)}${tag?" · "+esc(tag):""}</span></div>`}).join("");
+      <span class="sb">AP3M <b>${f1(r.ap)}</b> · MTD <b>${f1(r.mtd)}</b> ctn · ${esc(rt)}${tag?" · "+esc(tag):""}</span></div>`}).join("");
   const missing=br.filter(b=>!byB[b]).map(b=>BN[b]);
   const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="slim"><span class="nm">${BN[m.from]} → ${BN[m.to]}</span>
     <span class="rt"><span class="v">${f0(m.q)}<small>CTN</small></span><span class="v">≈ ${fRp(m.v)}<small>NILAI</small></span></span>
@@ -488,7 +500,7 @@ function vItem(){
   <p class="note" style="margin:-4px 0 10px">${cfg.rule} Semua item dihitung di sini, termasuk <b>item bonus</b> (paket 10+1 / FREE) dan item non-aktif, jadi rekomendasi selalu keluar. Pengirim tetap punya minimal ${S.keep} hari, penerima ditambah maksimal ${S.add} hari. Aturan bisa diubah di tab Saran Ancab.</p>
   ${bal}
   <h2>Per cabang</h2>
-  <p class="note" style="margin:-4px 0 8px">MTD = penjualan bulan berjalan (ctn) dari file stok, bukan dari order.${anyB?" Item <b>B-</b> (barang bonus) tidak memakai DOI, diganti <b>persentase sisa stok</b> = stok ÷ (MTD + stok).":""}</p>
+  <p class="note" style="margin:-4px 0 6px">MTD = penjualan bulan berjalan (ctn).${anyB?" Item <b>B-</b>: bukan DOI, tapi % sisa stok = stok ÷ (MTD + stok).":""}</p>
   <div class="slims">${cards}</div>
   ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
 }
@@ -542,7 +554,7 @@ function vBranch(){
       <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span>${bIt
         ?`<span class="d ${pctCls(pc)}">${pc==null?"–":f0(pc)+"%"}<small>SISA STOK</small></span>`
         :`<span class="d ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></span>`}</span>
-      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn${bIt?` · MTD <b>${f1(r.mtd)}</b> ctn · sisa <b>${pc==null?"–":f0(pc)+"%"}</b> dari (MTD + stok)`:""} · ${tag}</span></div>`;
+      <span class="sb">AP3M <b>${f1(r.ap)}</b>${bIt?" · MTD <b>"+f1(r.mtd)+"</b>":""} ctn · ${tag}</span></div>`;
   });
   const LIMIT=60;
   const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
@@ -556,7 +568,7 @@ function vBranch(){
     <div><div class="v">${f0(sum("soh"))}</div><div class="k">ctn stok ${esc(BN[b]||b)}</div></div>
     <div><div class="v">${f0(sum("int"))}</div><div class="k">ctn intransit</div></div>
     <div><div class="v">${all.filter(r=>r.soh>0).length}</div><div class="k">SKU ada stok dari ${all.length}</div></div></div></div>
-  <div class="note" style="margin:10px 0 6px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}${list.some(r=>isBItem(r))?" · item <b>B-</b> pakai sisa stok (%) bukan DOI":""}</div>
+  <div class="note" style="margin:8px 0 4px">${list.length} item${S.qb.trim()?` cocok "${esc(S.qb.trim())}"`:""} · <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown}`:""}${list.some(r=>isBItem(r))?" · item B- pakai % sisa stok":""}</div>
   <div class="slims">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
   <div style="height:24px"></div>${moreBtn}`
   :'<div class="card empty" style="margin-top:12px">Belum ada data cabang.</div>'}`;
@@ -564,11 +576,12 @@ function vBranch(){
 const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem(),brg:()=>vBranch()};
 function render(){fixBr();
   paintHead();
+  document.body.dataset.tab=S.tab;
   $("#view").innerHTML=VIEWS[S.tab]();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   window.scrollTo(0,0);
 }
-function refresh(){fixBr();const y=window.scrollY;paintHead();$("#view").innerHTML=VIEWS[S.tab]();restoreFocus();window.scrollTo(0,y)}
+function refresh(){fixBr();const y=window.scrollY;paintHead();document.body.dataset.tab=S.tab;$("#view").innerHTML=VIEWS[S.tab]();restoreFocus();window.scrollTo(0,y)}
 /* Search di tab 4 & 5 harus tetap fokus walau kartu di-render ulang */
 function restoreFocus(){
   const id=S.tab==="brg"?"#qb":(S.tab==="item"?"#q":null);if(!id)return;
