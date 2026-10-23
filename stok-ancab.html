@@ -178,6 +178,27 @@ h2::before{content:"";width:8px;height:18px;border-radius:2px;background:linear-
 .qty{background:linear-gradient(180deg,var(--steel),var(--steel-2));border:1px solid #10161D;border-bottom:4px solid var(--rack)}
 nav.tabs{background:rgba(20,28,37,.96);border:1px solid rgba(255,255,255,.12)}
 @media(min-width:700px){header h1{font-size:28px}}
+
+/* Tab 4 & 5: daftar tipis, supaya semua cabang / semua item muat dalam satu layar */
+.slims{display:flex;flex-direction:column;gap:6px}
+.slim{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid #DDE1E7;border-left:4px solid var(--steel);border-radius:10px;padding:5px 10px;color:var(--ink);font:500 13px var(--f-body);box-shadow:0 1px 2px rgba(16,24,40,.05)}
+button.slim{cursor:pointer;min-height:0}
+button.slim:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.slim.on{border-left-color:var(--rack);background:var(--bg)}
+.slim .nm{font:700 13px/1.25 var(--f-body);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slim .sb{grid-column:1;font:500 11px/1.3 var(--f-mono);color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slim .sb b{color:var(--ink);font-weight:600}
+.slim .rt{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.slim .v{font:700 15px/1 var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;min-width:46px}
+.slim .v small{display:block;font:600 9px var(--f-display);letter-spacing:.06em;color:var(--muted);margin-top:2px}
+.slim .d{min-width:44px;text-align:center;border-radius:8px;padding:4px 6px;font:700 15px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:#fff}
+.slim .d small{display:block;font:600 8px var(--f-display);letter-spacing:.06em;margin-top:2px;opacity:.92}
+.slim .d.crit{background:var(--crit)}.slim .d.warn{background:var(--warn-bg);color:#1A1200}
+.slim .d.ok{background:var(--ok)}.slim .d.na{background:var(--line);color:var(--muted)}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.mini.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mini .v{font:700 18px/1.1 var(--f-mono);font-variant-numeric:tabular-nums}
+.mini .k{font-size:11px;color:var(--muted);line-height:1.25;margin-top:1px}
 </style>
 
 </head>
@@ -403,8 +424,12 @@ function matchesHtml(){
   const {list}=itemIndex();
   const terms=S.q.toLowerCase().split(/\s+/).filter(Boolean);
   const f=list.filter(it=>terms.every(t=>(it.sku+" "+it.brand+" "+(isBonus(it)?"bonus":"")).toLowerCase().includes(t))).sort((a,b)=>b.apv-a.apv);
-  const head=terms.length?f.length+" item cocok"+(f.length>8?", 8 teratas":""):"Item dengan nilai AP3M tertinggi";
-  return `<div class="note" style="margin:4px 0">${head}</div>`+f.slice(0,8).map(it=>`<button type="button" class="pick" data-k="${esc(it.k)}" aria-pressed="${it.k===S.item}"><b>${esc(it.sku)}</b><span class="note">${esc(it.brand)} · AP3M ${fRp(it.apv)}/bln · MTD ${f1(it.mtd)} ctn semua cabang${isBonus(it)?" · item bonus":""}</span></button>`).join("")||'<div class="empty">Tidak ada item yang cocok.</div>';
+  const head=terms.length?f.length+" item cocok"+(f.length>6?", 6 teratas":""):"Item dengan nilai AP3M tertinggi";
+  const rows=f.slice(0,6).map(it=>`<button type="button" class="slim${it.k===S.item?" on":""}" data-k="${esc(it.k)}" aria-pressed="${it.k===S.item}">
+    <span class="nm">${esc(it.sku)}</span>
+    <span class="rt"><span class="v">${fRp(it.apv)}<small>AP3M</small></span><span class="v">${f1(it.mtd)}<small>MTD CTN</small></span></span>
+    <span class="sb">${esc(it.brand)}${isBonus(it)?" · item bonus":""}</span></button>`).join("");
+  return `<div class="note" style="margin:4px 0">${head}</div><div class="slims">${rows||'<div class="empty">Tidak ada item yang cocok.</div>'}</div>`;
 }
 function vItem(){
   const cfg=REG.SULAWESI,br=cfg.br;
@@ -425,39 +450,36 @@ function vItem(){
   const cards=have.slice().sort((a,b)=>{const x=doi(byB[a]),y=doi(byB[b]);return (x==null)-(y==null)||(x==null?0:x-y)}).map(b=>{
     const r=byB[b],d=doi(r),to=br.filter(x=>cfg.allow(b,x)),fr=br.filter(x=>cfg.allow(x,b));
     const rt=to.length||fr.length?[to.length?"Kirim ke "+to.map(x=>BN[x]).join(", "):"",fr.length?"Terima dari "+fr.map(x=>BN[x]).join(", "):""].filter(Boolean).join(" · "):"Tanpa rute Ancab";
-    return `<div class="card item"><div style="min-width:0"><div class="name">${BN[b]}</div><div class="brand">${esc(r.st)} · ${rt}</div></div>
-      <div class="duo"><div class="doi soh">${f1(r.soh)}<small>SOH CTN</small></div>
-      <div class="doi ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></div></div>
-      ${d!=null?meter(d):""}
-      <div class="facts"><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span><span><b>${fRp(r.apv)}</b>/bln</span><span>MTD <b>${f1(r.mtd)}</b> ctn</span><span><b>${fRp(r.mtdv)}</b> MTD</span></div>
-      <div class="row">${isBonus(r)?'<span class="pill warn">Item bonus</span>':""}${intPill(r.int)}</div></div>`}).join("");
+    const tag=[isBonus(r)?"item bonus":"",r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?r.st:""].filter(Boolean).join(" · ");
+    return `<div class="slim"><span class="nm">${BN[b]}</span>
+      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(d)}">${d==null?"–":(r.soh<=0.05?"0":f0(d))}<small>${d==null?"TANPA SALES":"HARI DOI"}</small></span></span>
+      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · MTD <b>${f1(r.mtd)}</b> ctn · ${esc(rt)}${tag?" · "+esc(tag):""}</span></div>`}).join("");
   const missing=br.filter(b=>!byB[b]).map(b=>BN[b]);
-  const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
-    <div style="min-width:0"><div class="name">${BN[m.from]} → ${BN[m.to]}</div><div class="route">≈ <b>${fRp(m.v)}</b></div></div></div>
-    <div class="facts"><span>${BN[m.to]} DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b></span><span>${BN[m.from]} ${m.sAp>0?"DOI <b>"+f0(m.sBefore)+"→"+f0(m.sAfter)+"</b>":"tanpa penjualan"}</span></div>
-    <div class="row">${m.sInt>0?`<span class="pill warn">Pengirim ada intransit ${f0(m.sInt)} ctn</span>`:'<span class="pill muted">Pengirim tanpa intransit</span>'}</div></div>`).join("");
+  const moveCards=c.moves.sort((a,b)=>b.v-a.v).map(m=>`<div class="slim"><span class="nm">${BN[m.from]} → ${BN[m.to]}</span>
+    <span class="rt"><span class="v">${f0(m.q)}<small>CTN</small></span><span class="v">≈ ${fRp(m.v)}<small>NILAI</small></span></span>
+    <span class="sb">${BN[m.to]} DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b> · ${BN[m.from]} ${m.sAp>0?"DOI <b>"+f0(m.sBefore)+"→"+f0(m.sAfter)+"</b>":"tanpa penjualan"}${m.sInt>0?" · pengirim ada intransit "+f0(m.sInt)+" ctn":""}</span></div>`).join("");
   const lowNoRoute=have.filter(b=>byB[b].ap>0&&doi(byB[b])<S.thr&&!br.some(s=>cfg.allow(s,b))).map(b=>`${BN[b]} (DOI ${f0(doi(byB[b]))})`);
   const why=c.unmet.map(u=>`<li><b>${BN[u.b]}</b>: ${esc(u.why)}.</li>`).join("");
   /* Tab 4 selalu menghitung semua item (all item): item bonus & item non-aktif tetap masuk perhitungan. */
-  const bal=(moveCards?`<div class="stack">${moveCards}</div>`:'<div class="card note">Tidak ada saran balancing untuk item ini dengan aturan sekarang.</div>')
+  const bal=(moveCards?`<div class="slims">${moveCards}</div>`:'<div class="card note">Tidak ada saran balancing untuk item ini dengan aturan sekarang.</div>')
     +(why?`<div class="card note" style="margin-top:10px"><b>Belum tertutup:</b><ul style="margin:6px 0 0;padding-left:18px">${why}</ul></div>`:"")
     +(lowNoRoute.length?`<div class="card note" style="margin-top:10px"><b>DOI rendah tanpa rute Ancab:</b> ${lowNoRoute.join(", ")}. Perlu order dari pusat.</div>`:"");
   return search+`
   <h2>${esc(it.sku)}</h2>
   <div class="note" style="margin:-6px 0 10px">${esc(it.brand)}${bonusCount?` · <b>item bonus</b> (${bonusCount} cabang)`:" · item non-bonus"}</div>
-  <div class="card"><div class="grid2">
-    <div class="stat"><span class="v">${f0(sumSoh)}</span><span class="k">ctn stok semua cabang</span></div>
-    <div class="stat"><span class="v">${f0(sumInt)}</span><span class="k">ctn intransit</span></div>
-    <div class="stat"><span class="v">${f0(sumMtd)}</span><span class="k">ctn MTD bulan ini</span></div>
-    <div class="stat"><span class="v">${fRp(sumMtdv)}</span><span class="k">nilai MTD</span></div>
-    <div class="stat"><span class="v">${dAll==null?"–":f0(dAll)}</span><span class="k">hari DOI gabungan</span></div>
-    <div class="stat"><span class="v">${fRp(sumApv)}</span><span class="k">AP3M per bulan</span></div></div></div>
+  <div class="card"><div class="mini">
+    <div><div class="v">${f0(sumSoh)}</div><div class="k">ctn stok semua cabang</div></div>
+    <div><div class="v">${f0(sumInt)}</div><div class="k">ctn intransit</div></div>
+    <div><div class="v">${dAll==null?"–":f0(dAll)}</div><div class="k">hari DOI gabungan</div></div>
+    <div><div class="v">${f0(sumMtd)}</div><div class="k">ctn MTD bulan ini</div></div>
+    <div><div class="v">${fRp(sumMtdv)}</div><div class="k">nilai MTD</div></div>
+    <div><div class="v">${fRp(sumApv)}</div><div class="k">AP3M per bulan</div></div></div></div>
   <h2>Saran balancing</h2>
   <p class="note" style="margin:-4px 0 10px">${cfg.rule} Semua item dihitung di sini, termasuk <b>item bonus</b> (paket 10+1 / FREE) dan item non-aktif, jadi rekomendasi selalu keluar. Pengirim tetap punya minimal ${S.keep} hari, penerima ditambah maksimal ${S.add} hari. Aturan bisa diubah di tab Saran Ancab.</p>
   ${bal}
   <h2>Per cabang</h2>
-  <p class="note" style="margin:-4px 0 10px">MTD = penjualan bulan berjalan (ctn) dari file stok, bukan dari order.</p>
-  <div class="stack">${cards}</div>
+  <p class="note" style="margin:-4px 0 8px">MTD = penjualan bulan berjalan (ctn) dari file stok, bukan dari order.</p>
+  <div class="slims">${cards}</div>
   ${missing.length?`<p class="note">Tidak ada data item ini di: ${missing.join(", ")}.</p>`:""}`;
 }
 /* ---------- Tab 5: Cek per cabang ---------- */
@@ -504,13 +526,10 @@ function vBranch(){
   const sum=k=>all.reduce((s,r)=>s+r[k],0);
   const cards=list.map(r=>{
     const d=doi(r);
-    return `<div class="card item"><div class="name">${esc(r.sku)}</div>
-      <div class="brand">${esc(r.brand)} · ${esc(r.cat)}</div>
-      <div class="duo"><div class="doi soh">${f1(r.soh)}<small>SOH CTN</small></div>
-      <div class="doi ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></div></div>
-      ${d!=null?meter(d):""}
-      <div class="facts"><span>Intransit <b>${f1(r.int)}</b> ctn</span><span>AP3M <b>${f1(r.ap)}</b> ctn/bln</span></div>
-      <div class="row">${r.st!=="AKTIF"?`<span class="pill muted">${esc(r.st)}</span>`:""}<span class="pill muted">${esc(r.code)}</span></div></div>`;
+    const tag=[esc(r.brand),esc(r.cat),r.int>0?"intransit "+f1(r.int)+" ctn":"",r.st!=="AKTIF"?esc(r.st):""].filter(Boolean).join(" · ");
+    return `<div class="slim"><span class="nm">${esc(r.sku)}</span>
+      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(d)}">${d==null?(r.soh<=0.05?"0":"–"):f0(d)}<small>${d==null?(r.soh<=0.05?"STOK NOL":"TANPA SALES"):"HARI DOI"}</small></span></span>
+      <span class="sb">AP3M <b>${f1(r.ap)}</b> ctn · ${tag}</span></div>`;
   });
   const LIMIT=60;
   const shown=S.more?cards.length:Math.min(cards.length,LIMIT);
@@ -520,13 +539,12 @@ function vBranch(){
   <div class="card stack" style="margin-top:10px">
     <input type="search" id="qb" value="${esc(S.qb)}" placeholder="Cari item di cabang ini, mis. #pbd / jeruk / hilo" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;min-height:46px">
   </div>
-  ${b?`<div class="card" style="margin-top:10px"><div class="grid2">
-    <div class="stat"><span class="v">${f0(sum("soh"))}</span><span class="k">ctn stok ${esc(BN[b]||b)}</span></div>
-    <div class="stat"><span class="v">${f0(sum("int"))}</span><span class="k">ctn intransit</span></div>
-    <div class="stat"><span class="v">${all.length}</span><span class="k">SKU tercatat</span></div>
-    <div class="stat"><span class="v">${all.filter(r=>r.soh>0).length}</span><span class="k">SKU ada stok</span></div></div></div>
-  <div class="note" style="margin:14px 0 8px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}</div>
-  <div class="stack">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
+  ${b?`<div class="card" style="margin-top:10px"><div class="mini">
+    <div><div class="v">${f0(sum("soh"))}</div><div class="k">ctn stok ${esc(BN[b]||b)}</div></div>
+    <div><div class="v">${f0(sum("int"))}</div><div class="k">ctn intransit</div></div>
+    <div><div class="v">${all.filter(r=>r.soh>0).length}</div><div class="k">SKU ada stok dari ${all.length}</div></div></div></div>
+  <div class="note" style="margin:10px 0 6px">${list.length} item${S.qb.trim()?` cocok dengan "${esc(S.qb.trim())}"`:""} di <b>${esc(BN[b]||b)}</b>${list.length>shown?` · tampil ${shown} teratas`:""}</div>
+  <div class="slims">${cards.slice(0,shown).join("")||'<div class="card empty">Tidak ada item yang cocok di cabang ini.</div>'}</div>
   <div style="height:24px"></div>${moreBtn}`
   :'<div class="card empty" style="margin-top:12px">Belum ada data cabang.</div>'}`;
 }
@@ -548,7 +566,7 @@ function restoreFocus(){
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
-  const pk=e.target.closest(".pick");if(pk){S.item=pk.dataset.k;refresh();return}
+  const pk=e.target.closest(".pick, button.slim[data-k]");if(pk){S.item=pk.dataset.k;refresh();return}
   const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;S.more=false;refresh();return}
