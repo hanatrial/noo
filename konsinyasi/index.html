@@ -116,7 +116,6 @@ a{color:var(--brand);font-weight:600}
     <input type="search" id="q" placeholder="Cari nama kedai…" autocomplete="off">
     <div class="row">
       <button class="btn small ghost" id="btnIssues" type="button" aria-pressed="false">Perlu dicek: 0</button>
-      <button class="btn small ghost" id="btnCsv" type="button">Unduh CSV</button>
     </div>
   </div>
   <div id="list" style="margin-top:12px"></div>
@@ -324,15 +323,6 @@ $('fMds').addEventListener('click', e=>{
 });
 $('q').addEventListener('input', render);
 $('btnIssues').addEventListener('click', ()=>{ issuesOnly = !issuesOnly; render(); });
-
-$('btnCsv').addEventListener('click', ()=>{
-  const rows = [['Nama kedai','Alamat','Nominal konsinyasi','MDS','Latitude','Longitude','Link Maps','Tanggal input']];
-  visible().forEach(i => rows.push([i.nama, i.alamat || '', i.nominal, i.mds, i.lat, i.lng, isFinite(i.lat) ? mapsUrl(i) : '', fmtDate(i.createdAt)]));
-  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
-  a.download = 'kedai-konsinyasi.csv'; a.click();
-});
 
 // ---------- data realtime ----------
 DOC.onSnapshot(snap=>{
