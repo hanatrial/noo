@@ -54,6 +54,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+.addr{font-size:14px;overflow-wrap:anywhere}
 .result{font-size:13px;border-radius:12px;padding:8px 12px}
 .result.ok{background:var(--brand-soft);color:var(--brand)}
 .result.bad{background:var(--bad-soft);color:var(--bad)}
@@ -85,6 +86,9 @@ a{color:var(--brand);font-weight:600}
   <div class="card stack">
     <label class="f">Nama kedai
       <input type="text" id="nama" placeholder="mis. Kedai Bu Ani" autocomplete="off" maxlength="80">
+    </label>
+    <label class="f">Alamat (bebas, tulis sesuai yang kamu ingat)
+      <input type="text" id="alamat" placeholder="mis. Jl. Veteran No. 12, depan pasar" autocomplete="off" maxlength="200">
     </label>
     <label class="f">Nominal konsinyasi (Rp)
       <input type="tel" id="nominal" inputmode="numeric" placeholder="mis. 1.500.000" autocomplete="off">
@@ -220,14 +224,14 @@ function renderMds(){
 }
 
 $('btnSave').addEventListener('click', async ()=>{
-  const nama = $('nama').value.trim(), nominal = nominalValue();
+  const nama = $('nama').value.trim(), nominal = nominalValue(), alamat = $('alamat').value.trim();
   const dupe = items.find(i => norm(i.nama) === norm(nama));
   if(dupe && !confirm(`Sudah ada kedai bernama "${dupe.nama}" (${dupe.mds}). Tetap simpan?`)) return;
   $('btnSave').disabled = true;
   const now = new Date().toISOString();
   try{
-    await DOC.set({shops:{[newId()]:{nama, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, createdAt:now, updatedAt:now}}}, {merge:true});
-    $('nama').value = ''; $('nominal').value = ''; $('manual').value = ''; pos = null;
+    await DOC.set({shops:{[newId()]:{nama, alamat, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, createdAt:now, updatedAt:now}}}, {merge:true});
+    $('nama').value = ''; $('alamat').value = ''; $('nominal').value = ''; $('manual').value = ''; pos = null;
     setLocStatus('Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.');
     toast('Tersimpan');
   }catch(e){ console.error(e); toast('Gagal menyimpan: ' + e.message); }
@@ -251,7 +255,7 @@ function visible(){
   const q = norm($('q').value);
   return items.filter(i =>
     (!filterMds || i.mds === filterMds) &&
-    (!q || norm(i.nama).includes(q)) &&
+    (!q || norm(i.nama).includes(q) || norm(i.alamat).includes(q)) &&
     (!issuesOnly || issuesFor(i).length));
 }
 
@@ -276,11 +280,13 @@ function render(){
     return `<div class="card item" data-id="${esc(it.id)}">
       <div class="top"><div class="nama">${esc(it.nama)}</div><div class="nom">${rp(it.nominal)}</div></div>
       <div class="meta"><span class="pill">${esc(it.mds)}</span><span>${esc(fmtDate(it.createdAt))}</span>${hasLoc ? `<span>${it.lat.toFixed(5)}, ${it.lng.toFixed(5)}</span>` : ''}</div>
+      <div class="addr">${it.alamat ? '🏠 ' + esc(it.alamat) : '<span style="color:var(--muted)">Alamat belum diisi</span>'}</div>
       ${iss.map(x=>`<div><span class="pill ${x.t}">${esc(x.m)}</span></div>`).join('')}
       ${c ? `<div class="result ${c.ok?'ok':'bad'}">${esc(c.msg)}</div>` : ''}
       <div class="actions">
         ${hasLoc ? `<a class="btn small ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="${mapsUrl(it)}" target="_blank" rel="noopener">Buka di Maps</a>` : ''}
         ${hasLoc ? `<button class="btn small ghost" data-act="check" type="button">Cek di lokasi</button>` : ''}
+        <button class="btn small ghost" data-act="addr" type="button">Ubah alamat</button>
         <button class="btn small ghost" data-act="relocate" type="button">Perbarui lokasi</button>
         <button class="btn small danger" data-act="del" type="button">Hapus</button>
       </div>
@@ -295,6 +301,13 @@ $('list').addEventListener('click', async e=>{
   if(act === 'del'){
     if(!confirm(`Hapus "${it.nama}"?`)) return;
     try{ await DOC.update({['shops.' + id]: firebase.firestore.FieldValue.delete()}); toast('Dihapus'); }catch(err){ toast('Gagal menghapus: ' + err.message); }
+    return;
+  }
+  if(act === 'addr'){
+    const v = prompt(`Alamat "${it.nama}":`, it.alamat || '');
+    if(v === null) return;
+    try{ await DOC.set({shops:{[id]:{alamat:v.trim().slice(0,200), updatedAt:new Date().toISOString()}}}, {merge:true}); toast('Alamat disimpan'); }
+    catch(err){ toast('Gagal menyimpan: ' + err.message); }
     return;
   }
   b.disabled = true;
@@ -325,8 +338,8 @@ $('q').addEventListener('input', render);
 $('btnIssues').addEventListener('click', ()=>{ issuesOnly = !issuesOnly; render(); });
 
 $('btnCsv').addEventListener('click', ()=>{
-  const rows = [['Nama kedai','Nominal konsinyasi','MDS','Latitude','Longitude','Link Maps','Tanggal input']];
-  visible().forEach(i => rows.push([i.nama, i.nominal, i.mds, i.lat, i.lng, isFinite(i.lat) ? mapsUrl(i) : '', fmtDate(i.createdAt)]));
+  const rows = [['Nama kedai','Alamat','Nominal konsinyasi','MDS','Latitude','Longitude','Link Maps','Tanggal input']];
+  visible().forEach(i => rows.push([i.nama, i.alamat || '', i.nominal, i.mds, i.lat, i.lng, isFinite(i.lat) ? mapsUrl(i) : '', fmtDate(i.createdAt)]));
   const csv = '﻿' + rows.map(r => r.map(v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
