@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Kedai Konsinyasi</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#14201B; --muted:#7B8883; --line:#E6EBE8;
+  --brand:#0F6B4B; --brand-soft:#E3F3EC; --warn:#B26A00; --warn-soft:#FFF4DE; --bad:#D6343C; --bad-soft:#FDECEC;
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f);padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto}
+header{padding:calc(18px + env(safe-area-inset-top,0px)) 0 8px}
+h1{font-size:26px;line-height:1.15;letter-spacing:-.02em;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+h2{font-size:17px;letter-spacing:-.01em;margin:22px 0 10px}
+.card{background:var(--surface);border-radius:22px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+input[type=text],input[type=search],input[type=number],input[type=tel]{font:500 16px var(--f);color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;min-height:48px;width:100%}
+input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:#E8ECEA;border-radius:999px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:9px 12px;font:600 14px var(--f);color:var(--muted);cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.btn{font:600 15px var(--f);border:0;border-radius:999px;padding:12px 18px;min-height:48px;background:var(--brand);color:#fff;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{min-height:38px;padding:8px 14px;font-size:13px}
+.btn.danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad-soft)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.loc{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:16px;padding:12px}
+.loc .st{font-size:13px;color:var(--muted)}
+.loc .st.ok{color:var(--brand);font-weight:600}
+.loc .st.err{color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border-radius:18px;padding:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.stat b{display:block;font-size:17px;letter-spacing:-.01em}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.stat span.rp{color:var(--brand);font-weight:600;white-space:nowrap}
+.item{display:flex;flex-direction:column;gap:10px}
+.item+.item{margin-top:10px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.nama{font-weight:700;font-size:16px;overflow-wrap:anywhere}
+.nom{font-weight:700;color:var(--brand);white-space:nowrap}
+.meta{font-size:12px;color:var(--muted);display:flex;gap:6px 12px;flex-wrap:wrap}
+.pill{display:inline-block;font:600 11px var(--f);padding:4px 10px;border-radius:999px;background:var(--brand-soft);color:var(--brand);white-space:nowrap}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.result{font-size:13px;border-radius:12px;padding:8px 12px}
+.result.ok{background:var(--brand-soft);color:var(--brand)}
+.result.bad{background:var(--bad-soft);color:var(--bad)}
+.empty{text-align:center;color:var(--muted);padding:28px 8px}
+.bar{font-size:12px;color:var(--muted);padding:8px 0}
+.bar.err{color:var(--bad);font-weight:600}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:20;max-width:90vw}
+a{color:var(--brand);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kedai Konsinyasi</h1>
+    <div class="sub">Isian tim: nama kedai, nominal konsinyasi, dan lokasinya</div>
+  </header>
+  <div class="bar" id="conn">Menghubungkan ke database…</div>
+
+  <div class="card stack">
+    <label class="f">Saya MDS
+      <div class="seg" id="mdsPick" role="group" aria-label="Pilih MDS">
+        <button type="button" data-mds="Eva" aria-pressed="false">Eva</button>
+        <button type="button" data-mds="Asrar" aria-pressed="false">Asrar</button>
+      </div>
+    </label>
+  </div>
+
+  <h2>Tambah kedai</h2>
+  <div class="card stack">
+    <label class="f">Nama kedai
+      <input type="text" id="nama" placeholder="mis. Kedai Bu Ani" autocomplete="off" maxlength="80">
+    </label>
+    <label class="f">Nominal konsinyasi (Rp)
+      <input type="tel" id="nominal" inputmode="numeric" placeholder="mis. 1.500.000" autocomplete="off">
+    </label>
+    <div class="loc">
+      <div class="row">
+        <button class="btn small" id="btnLoc" type="button">📍 Ambil lokasi sekarang</button>
+        <button class="btn small ghost" id="btnManual" type="button">Isi manual</button>
+      </div>
+      <input type="text" id="manual" placeholder="Tempel koordinat atau link Google Maps" hidden>
+      <div class="st" id="locSt">Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.</div>
+    </div>
+    <button class="btn" id="btnSave" type="button" disabled>Simpan kedai</button>
+  </div>
+
+  <h2>Daftar kedai</h2>
+  <div class="stats" id="stats"></div>
+  <div class="stack" style="margin-top:12px">
+    <div class="seg" id="fMds" role="group" aria-label="Filter MDS">
+      <button type="button" data-f="" aria-pressed="true">Semua</button>
+      <button type="button" data-f="Eva" aria-pressed="false">Eva</button>
+      <button type="button" data-f="Asrar" aria-pressed="false">Asrar</button>
+    </div>
+    <input type="search" id="q" placeholder="Cari nama kedai…" autocomplete="off">
+    <div class="row">
+      <button class="btn small ghost" id="btnIssues" type="button" aria-pressed="false">Perlu dicek: 0</button>
+      <button class="btn small ghost" id="btnCsv" type="button">Unduh CSV</button>
+    </div>
+  </div>
+  <div id="list" style="margin-top:12px"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",
+  authDomain: "mds-sulawesi.firebaseapp.com",
+  projectId: "mds-sulawesi",
+  storageBucket: "mds-sulawesi.firebasestorage.app",
+  messagingSenderId: "511949021685",
+  appId: "1:511949021685:web:bc32007af0555449e7c0bc"
+});
+const db = firebase.firestore();
+// Semua kedai disimpan dalam satu dokumen (peta `shops`, kunci = id kedai) di koleksi yang sudah
+// diizinkan aturan database. Penulisan per-kunci, jadi tambahan dari dua MDS tidak saling menimpa.
+const DOC = db.collection('monitoring_noo').doc('konsinyasi_kedai');
+const newId = () => 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const NEAR_M = 50;      // dua kedai lebih dekat dari ini ditandai kemungkinan dobel
+const MATCH_M = 100;    // selisih lokasi saat cek di tempat yang masih dianggap sesuai
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rp = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`; };
+const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+let items = [], mds = '', filterMds = '', issuesOnly = false;
+let pos = null;             // {lat,lng,acc} untuk form tambah
+let checks = {};            // hasil cek di tempat per id
+
+try{ mds = localStorage.getItem('kons-mds') || ''; }catch(e){}
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(()=> t.hidden = true, 2600);
+}
+
+// ---------- lokasi ----------
+function getPosition(){
+  return new Promise((res, rej)=>{
+    if(!navigator.geolocation) return rej(new Error('Browser ini tidak mendukung lokasi.'));
+    navigator.geolocation.getCurrentPosition(
+      p => res({lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy)}),
+      e => rej(new Error(e.code === 1 ? 'Izin lokasi ditolak. Aktifkan izin lokasi untuk browser ini.' : 'Lokasi belum didapat. Coba di tempat terbuka.')),
+      {enableHighAccuracy:true, timeout:20000, maximumAge:0}
+    );
+  });
+}
+function dist(a, b){
+  const R = 6371000, r = x => x*Math.PI/180;
+  const dLat = r(b.lat-a.lat), dLng = r(b.lng-a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function parseCoords(s){
+  s = String(s||'').trim();
+  const m = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/[?&](?:q|ll|query)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) || s.match(/(-?\d{1,2}\.\d+)\s*[, ]\s*(-?\d{1,3}\.\d+)/);
+  if(!m) return null;
+  const lat = +m[1], lng = +m[2];
+  return (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? {lat, lng, acc:0} : null;
+}
+const mapsUrl = p => `https://www.google.com/maps?q=${p.lat},${p.lng}`;
+
+// ---------- form ----------
+function setLocStatus(msg, cls){ const s = $('locSt'); s.textContent = msg; s.className = 'st' + (cls ? ' '+cls : ''); }
+function refreshSave(){
+  $('btnSave').disabled = !(mds && $('nama').value.trim() && nominalValue() > 0 && pos);
+}
+function nominalValue(){ return +($('nominal').value.replace(/\D/g,'')) || 0; }
+
+$('nominal').addEventListener('input', ()=>{
+  const n = nominalValue();
+  $('nominal').value = n ? n.toLocaleString('id-ID') : '';
+  refreshSave();
+});
+$('nama').addEventListener('input', refreshSave);
+
+$('btnLoc').addEventListener('click', async ()=>{
+  $('btnLoc').disabled = true; setLocStatus('Mengambil lokasi…');
+  try{
+    pos = await getPosition();
+    setLocStatus(`✓ Lokasi tersimpan (${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}), akurasi ±${pos.acc} m` + (pos.acc > 100 ? '. Akurasi kurang bagus, coba lagi di tempat terbuka.' : ''), 'ok');
+  }catch(e){ pos = null; setLocStatus(e.message, 'err'); }
+  $('btnLoc').disabled = false; refreshSave();
+});
+$('btnManual').addEventListener('click', ()=>{ $('manual').hidden = !$('manual').hidden; if(!$('manual').hidden) $('manual').focus(); });
+$('manual').addEventListener('input', ()=>{
+  const p = parseCoords($('manual').value);
+  if(p){ pos = p; setLocStatus(`✓ Koordinat terbaca (${p.lat.toFixed(6)}, ${p.lng.toFixed(6)})`, 'ok'); }
+  else{ pos = null; setLocStatus($('manual').value ? 'Koordinat tidak terbaca. Contoh: -5.1477, 119.4327' : 'Lokasi belum diambil.', $('manual').value ? 'err' : ''); }
+  refreshSave();
+});
+
+$('mdsPick').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  mds = b.dataset.mds;
+  try{ localStorage.setItem('kons-mds', mds); }catch(e){}
+  renderMds(); refreshSave();
+});
+function renderMds(){
+  document.querySelectorAll('#mdsPick button').forEach(b=> b.setAttribute('aria-pressed', b.dataset.mds === mds));
+}
+
+$('btnSave').addEventListener('click', async ()=>{
+  const nama = $('nama').value.trim(), nominal = nominalValue();
+  const dupe = items.find(i => norm(i.nama) === norm(nama));
+  if(dupe && !confirm(`Sudah ada kedai bernama "${dupe.nama}" (${dupe.mds}). Tetap simpan?`)) return;
+  $('btnSave').disabled = true;
+  const now = new Date().toISOString();
+  try{
+    await DOC.set({shops:{[newId()]:{nama, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, createdAt:now, updatedAt:now}}}, {merge:true});
+    $('nama').value = ''; $('nominal').value = ''; $('manual').value = ''; pos = null;
+    setLocStatus('Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.');
+    toast('Tersimpan');
+  }catch(e){ console.error(e); toast('Gagal menyimpan: ' + e.message); }
+  refreshSave();
+});
+
+// ---------- daftar ----------
+function issuesFor(it){
+  const out = [];
+  if(!(isFinite(it.lat) && isFinite(it.lng))) out.push({t:'bad', m:'Lokasi belum ada'});
+  const same = items.filter(o => o.id !== it.id && norm(o.nama) === norm(it.nama));
+  if(same.length) out.push({t:'warn', m:'Nama kembar dengan ' + same.map(o=>o.mds).join(', ')});
+  if(isFinite(it.lat) && isFinite(it.lng)){
+    const near = items.filter(o => o.id !== it.id && isFinite(o.lat) && isFinite(o.lng) && norm(o.nama) !== norm(it.nama) && dist(it, o) < NEAR_M);
+    near.slice(0,2).forEach(o => out.push({t:'warn', m:`Lokasi dekat "${o.nama}" (${Math.round(dist(it,o))} m)`}));
+  }
+  return out;
+}
+
+function visible(){
+  const q = norm($('q').value);
+  return items.filter(i =>
+    (!filterMds || i.mds === filterMds) &&
+    (!q || norm(i.nama).includes(q)) &&
+    (!issuesOnly || issuesFor(i).length));
+}
+
+function render(){
+  const total = items.reduce((s,i)=> s + (i.nominal||0), 0);
+  const by = n => items.filter(i=>i.mds===n);
+  const sum = a => a.reduce((s,i)=> s+(i.nominal||0), 0);
+  $('stats').innerHTML =
+    `<div class="stat"><b>${items.length}</b><span>Semua kedai</span><span class="rp">${rp(total)}</span></div>` +
+    `<div class="stat"><b>${by('Eva').length}</b><span>Eva</span><span class="rp">${rp(sum(by('Eva')))}</span></div>` +
+    `<div class="stat"><b>${by('Asrar').length}</b><span>Asrar</span><span class="rp">${rp(sum(by('Asrar')))}</span></div>`;
+
+  const nIssues = items.filter(i => issuesFor(i).length).length;
+  $('btnIssues').textContent = `Perlu dicek: ${nIssues}`;
+  $('btnIssues').setAttribute('aria-pressed', issuesOnly);
+  $('btnIssues').style.borderColor = issuesOnly ? 'var(--brand)' : '';
+
+  const list = visible();
+  $('list').innerHTML = list.length ? list.map(it=>{
+    const iss = issuesFor(it), c = checks[it.id];
+    const hasLoc = isFinite(it.lat) && isFinite(it.lng);
+    return `<div class="card item" data-id="${esc(it.id)}">
+      <div class="top"><div class="nama">${esc(it.nama)}</div><div class="nom">${rp(it.nominal)}</div></div>
+      <div class="meta"><span class="pill">${esc(it.mds)}</span><span>${esc(fmtDate(it.createdAt))}</span>${hasLoc ? `<span>${it.lat.toFixed(5)}, ${it.lng.toFixed(5)}</span>` : ''}</div>
+      ${iss.map(x=>`<div><span class="pill ${x.t}">${esc(x.m)}</span></div>`).join('')}
+      ${c ? `<div class="result ${c.ok?'ok':'bad'}">${esc(c.msg)}</div>` : ''}
+      <div class="actions">
+        ${hasLoc ? `<a class="btn small ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="${mapsUrl(it)}" target="_blank" rel="noopener">Buka di Maps</a>` : ''}
+        ${hasLoc ? `<button class="btn small ghost" data-act="check" type="button">Cek di lokasi</button>` : ''}
+        <button class="btn small ghost" data-act="relocate" type="button">Perbarui lokasi</button>
+        <button class="btn small danger" data-act="del" type="button">Hapus</button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="card empty">${items.length ? 'Tidak ada kedai yang cocok dengan filter.' : 'Belum ada kedai. Tambahkan yang pertama di atas.'}</div>`;
+}
+
+$('list').addEventListener('click', async e=>{
+  const b = e.target.closest('button[data-act]'); if(!b) return;
+  const id = b.closest('[data-id]').dataset.id, it = items.find(i=>i.id === id); if(!it) return;
+  const act = b.dataset.act;
+  if(act === 'del'){
+    if(!confirm(`Hapus "${it.nama}"?`)) return;
+    try{ await DOC.update({['shops.' + id]: firebase.firestore.FieldValue.delete()}); toast('Dihapus'); }catch(err){ toast('Gagal menghapus: ' + err.message); }
+    return;
+  }
+  b.disabled = true;
+  try{
+    const here = await getPosition();
+    if(act === 'check'){
+      const d = Math.round(dist(it, here));
+      checks[id] = d <= MATCH_M
+        ? {ok:true,  msg:`✓ Sesuai: kamu ${d} m dari titik tersimpan.`}
+        : {ok:false, msg:`✗ Berbeda: kamu ${d >= 1000 ? (d/1000).toFixed(1)+' km' : d+' m'} dari titik tersimpan. Perbarui lokasi bila titik lama salah.`};
+      render();
+    }else if(act === 'relocate'){
+      if(!confirm(`Ganti lokasi "${it.nama}" dengan posisimu sekarang?`)){ b.disabled = false; return; }
+      await DOC.set({shops:{[id]:{lat:here.lat, lng:here.lng, acc:here.acc, updatedAt:new Date().toISOString()}}}, {merge:true});
+      delete checks[id]; toast('Lokasi diperbarui');
+    }
+  }catch(err){ toast(err.message); }
+  b.disabled = false;
+});
+
+$('fMds').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  filterMds = b.dataset.f;
+  document.querySelectorAll('#fMds button').forEach(x=> x.setAttribute('aria-pressed', x === b));
+  render();
+});
+$('q').addEventListener('input', render);
+$('btnIssues').addEventListener('click', ()=>{ issuesOnly = !issuesOnly; render(); });
+
+$('btnCsv').addEventListener('click', ()=>{
+  const rows = [['Nama kedai','Nominal konsinyasi','MDS','Latitude','Longitude','Link Maps','Tanggal input']];
+  visible().forEach(i => rows.push([i.nama, i.nominal, i.mds, i.lat, i.lng, isFinite(i.lat) ? mapsUrl(i) : '', fmtDate(i.createdAt)]));
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'kedai-konsinyasi.csv'; a.click();
+});
+
+// ---------- data realtime ----------
+DOC.onSnapshot(snap=>{
+  const shops = (snap.exists && snap.data().shops) || {};
+  items = Object.entries(shops).map(([id, v]) => ({id, ...v})).sort((a,b)=> String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+  $('conn').textContent = `Tersambung · ${items.length} kedai · pembaruan langsung`;
+  $('conn').className = 'bar';
+  render(); refreshSave();
+}, err=>{
+  console.error(err);
+  $('conn').textContent = 'Tidak bisa terhubung ke database: ' + err.message;
+  $('conn').className = 'bar err';
+});
+
+renderMds(); render(); refreshSave();
+</script>
+</body>
+</html>
