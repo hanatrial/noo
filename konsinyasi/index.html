@@ -102,16 +102,6 @@ a{color:var(--brand);font-weight:600}
     <label class="f">Alamat (bebas, tulis sesuai yang kamu ingat)
       <input type="text" id="alamat" placeholder="mis. Jl. Veteran No. 12, depan pasar" autocomplete="off" maxlength="200">
     </label>
-    <label class="f">Nominal konsinyasi (Rp)
-      <input type="tel" id="nominal" inputmode="numeric" placeholder="mis. 1.500.000" autocomplete="off">
-    </label>
-    <div class="loc">
-      <div class="row">
-        <button class="btn small" id="btnLoc" type="button">📍 Ambil lokasi sekarang</button>
-        <span class="pill bad">Wajib</span>
-      </div>
-      <div class="st" id="locSt">Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.</div>
-    </div>
     <div class="f">Foto pajangan setelah konsinyasi <span class="pill bad" style="margin-left:6px">Wajib</span>
       <div class="photo-zone" id="pzone" role="button" tabindex="0" aria-label="Ambil foto pajangan setelah konsinyasi">
         <div id="pzoneHint" class="pzone-hint">📷 Tekan untuk foto pajangan<br><span style="font-size:12px">Ambil dari depan kedai setelah barang konsinyasi ditata</span></div>
@@ -122,6 +112,16 @@ a{color:var(--brand);font-weight:600}
         <span class="pzone-st" id="pst">Belum ada foto.</span>
         <button class="btn small ghost" id="btnRetake" type="button" hidden>Ganti foto</button>
       </div>
+    </div>
+    <label class="f">Nominal konsinyasi (Rp)
+      <input type="tel" id="nominal" inputmode="numeric" placeholder="mis. 1.500.000" autocomplete="off">
+    </label>
+    <div class="loc">
+      <div class="row">
+        <button class="btn small" id="btnLoc" type="button">📍 Ambil lokasi sekarang</button>
+        <span class="pill bad">Wajib</span>
+      </div>
+      <div class="st" id="locSt">Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.</div>
     </div>
     <button class="btn" id="btnSave" type="button" disabled>Simpan kedai</button>
   </div>
