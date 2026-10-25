@@ -24,7 +24,17 @@ h2{font-size:17px;letter-spacing:-.01em;margin:22px 0 10px}
 .card{background:var(--surface);border-radius:22px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06)}
 .stack{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.photo-zone{display:flex;align-items:center;justify-content:center;min-height:132px;border:1.5px dashed var(--line);border-radius:16px;background:var(--bg);cursor:pointer;overflow:hidden;padding:12px;text-align:center}
+.photo-zone.shot{border-style:solid;border-color:var(--brand);padding:0;background:#000}
+.photo-zone img{width:100%;height:auto;display:block;border-radius:14px}
+.photo-zone.shot img{border-radius:16px}
+.pzone-hint{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+.pzone-st{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+.pzone-st.ok{color:var(--brand);font-weight:600}
+.pzone-st.err{color:var(--bad)}
+.pwrap{margin-top:2px}
+.pimg{width:100%;height:auto;display:block;border-radius:14px;background:#000}
 input[type=text],input[type=search],input[type=number],input[type=tel]{font:500 16px var(--f);color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;min-height:48px;width:100%}
 input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:#E8ECEA;border-radius:999px;padding:3px;gap:3px}
@@ -70,7 +80,7 @@ a{color:var(--brand);font-weight:600}
 <div class="wrap">
   <header>
     <h1>Kedai Konsinyasi</h1>
-    <div class="sub">Isian tim: nama kedai, nominal konsinyasi, dan lokasinya</div>
+    <div class="sub">Isian tim: nama kedai, nominal konsinyasi, lokasi, dan foto pajangan setelah konsinyasi</div>
   </header>
   <div class="bar" id="conn">Menghubungkan ke database…</div>
 
@@ -101,6 +111,17 @@ a{color:var(--brand);font-weight:600}
         <span class="pill bad">Wajib</span>
       </div>
       <div class="st" id="locSt">Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.</div>
+    </div>
+    <div class="f">Foto pajangan setelah konsinyasi <span class="pill bad" style="margin-left:6px">Wajib</span>
+      <div class="photo-zone" id="pzone" role="button" tabindex="0" aria-label="Ambil foto pajangan setelah konsinyasi">
+        <div id="pzoneHint" class="pzone-hint">📷 Tekan untuk foto pajangan<br><span style="font-size:12px">Ambil dari depan kedai setelah barang konsinyasi ditata</span></div>
+        <img id="pview" alt="Foto pajangan setelah konsinyasi" hidden>
+      </div>
+      <input type="file" id="pcam" accept="image/*" capture="environment" hidden>
+      <div class="row" style="justify-content:space-between">
+        <span class="pzone-st" id="pst">Belum ada foto.</span>
+        <button class="btn small ghost" id="btnRetake" type="button" hidden>Ganti foto</button>
+      </div>
     </div>
     <button class="btn" id="btnSave" type="button" disabled>Simpan kedai</button>
   </div>
@@ -135,6 +156,11 @@ const db = firebase.firestore();
 // Semua kedai disimpan dalam satu dokumen (peta `shops`, kunci = id kedai) di koleksi yang sudah
 // diizinkan aturan database. Penulisan per-kunci, jadi tambahan dari dua MDS tidak saling menimpa.
 const DOC = db.collection('monitoring_noo').doc('konsinyasi_kedai');
+// Foto pajangan disimpan di subkoleksi dokumen ini (bukan di peta `shops`), karena satu dokumen
+// Firestore hanya boleh 1 MB sedangkan satu foto sudah ratusan KB.
+const FOTOS = DOC.collection('foto');
+const FOTO_MAX = 1000;   // sisi terpanjang foto setelah dikompres (px)
+const FOTO_Q = 0.62;     // kualitas JPEG
 const newId = () => 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const NEAR_M = 50;      // dua kedai lebih dekat dari ini ditandai kemungkinan dobel
 const MATCH_M = 100;    // selisih lokasi saat cek di tempat yang masih dianggap sesuai
@@ -149,6 +175,8 @@ const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 let items = [], mds = '', filterMds = '', issuesOnly = false;
 let pos = null;             // {lat,lng,acc} untuk form tambah
 let checks = {};            // hasil cek di tempat per id
+let foto = null;            // {data, w, h} foto form tambah, sudah dikompres
+const fotoCache = {};       // id kedai -> {data, w, h, at}
 
 
 function toast(msg){
@@ -175,10 +203,84 @@ function dist(a, b){
 }
 const mapsUrl = p => `https://www.google.com/maps?q=${p.lat},${p.lng}`;
 
+// ---------- foto pajangan ----------
+function setPst(msg, cls){ const s = $('pst'); s.textContent = msg; s.className = 'pzone-st' + (cls ? ' '+cls : ''); }
+
+// Kecilkan foto dari kamera HP supaya hemat kuota dan aman di bawah batas dokumen.
+function compressFoto(file){
+  return new Promise((res, rej)=>{
+    const rd = new FileReader();
+    rd.onerror = ()=> rej(new Error('Foto tidak bisa dibaca. Coba ambil ulang.'));
+    rd.onload = ()=>{
+      const img = new Image();
+      img.onerror = ()=> rej(new Error('Foto tidak bisa dibuka. Coba ambil ulang.'));
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > FOTO_MAX || h > FOTO_MAX){ if(w > h){ h = Math.round(h*FOTO_MAX/w); w = FOTO_MAX; } else { w = Math.round(w*FOTO_MAX/h); h = FOTO_MAX; } }
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        const data = c.toDataURL('image/jpeg', FOTO_Q);
+        if(!data || data.length < 100) return rej(new Error('Foto gagal dikompres. Coba ambil ulang.'));
+        res({data, w, h});
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+
+function showFoto(f, url){
+  const view = $('pview'), hint = $('pzoneHint'), zone = $('pzone');
+  if(!f){ view.hidden = true; view.removeAttribute('src'); hint.hidden = false; zone.classList.remove('shot'); $('btnRetake').hidden = true; return; }
+  view.src = f.data || url || '';
+  view.hidden = false; hint.hidden = true; zone.classList.add('shot'); $('btnRetake').hidden = false;
+}
+
+$('pzone').addEventListener('click', ()=> $('pcam').click());
+$('pzone').addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); $('pcam').click(); } });
+$('btnRetake').addEventListener('click', e=>{ e.stopPropagation(); $('pcam').click(); });
+
+$('pcam').addEventListener('change', async ()=>{
+  const file = $('pcam').files && $('pcam').files[0];
+  if(!file) return;
+  setPst('Memproses foto…');
+  try{
+    foto = await compressFoto(file);
+    showFoto(foto);
+    const kb = Math.round(foto.data.length*0.75/1024);
+    setPst(`✓ Foto siap (${foto.w}×${foto.h}, ±${kb} KB)`, 'ok');
+  }catch(e){
+    foto = null; showFoto(null); setPst(e.message, 'err');
+  }
+  $('pcam').value = '';
+  refreshSave();
+});
+
+function resetFoto(){
+  foto = null; showFoto(null); setPst('Belum ada foto.');
+  $('pcam').value = '';
+}
+
+// Ambil foto yang tersimpan untuk satu kedai (sekali saja, lalu disimpan di memori).
+async function loadFoto(id){
+  if(fotoCache[id] !== undefined) return fotoCache[id];
+  fotoCache[id] = null;
+  try{
+    const snap = await FOTOS.doc(id).get();
+    if(snap.exists && snap.data().data) fotoCache[id] = snap.data();
+  }catch(e){ console.warn('Foto gagal dimuat', id, e); }
+  return fotoCache[id];
+}
+
+async function saveFoto(id, f){
+  await FOTOS.doc(id).set({data:f.data, w:f.w, h:f.h, at:new Date().toISOString()});
+  fotoCache[id] = {data:f.data, w:f.w, h:f.h};
+}
+
 // ---------- form ----------
 function setLocStatus(msg, cls){ const s = $('locSt'); s.textContent = msg; s.className = 'st' + (cls ? ' '+cls : ''); }
 function refreshSave(){
-  $('btnSave').disabled = !(mds && $('nama').value.trim() && nominalValue() > 0 && pos);
+  $('btnSave').disabled = !(mds && $('nama').value.trim() && nominalValue() > 0 && pos && foto);
 }
 function nominalValue(){ return +($('nominal').value.replace(/\D/g,'')) || 0; }
 
@@ -211,16 +313,25 @@ function renderMds(){
 
 $('btnSave').addEventListener('click', async ()=>{
   const nama = $('nama').value.trim(), nominal = nominalValue(), alamat = $('alamat').value.trim();
+  if(!foto){ setPst('Foto pajangan wajib diambil dulu.', 'err'); toast('Foto pajangan wajib diambil dulu.'); return; }
   const dupe = items.find(i => norm(i.nama) === norm(nama));
   if(dupe && !confirm(`Sudah ada kedai bernama "${dupe.nama}" (${dupe.mds}). Tetap simpan?`)) return;
   $('btnSave').disabled = true;
-  const now = new Date().toISOString();
+  const now = new Date().toISOString(), id = newId();
   try{
-    await DOC.set({shops:{[newId()]:{nama, alamat, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, createdAt:now, updatedAt:now}}}, {merge:true});
+    // foto ditulis lebih dulu: kalau fotonya gagal, kedai tidak tersimpan setengah jalan
+    await saveFoto(id, foto);
+    try{
+      await DOC.set({shops:{[id]:{nama, alamat, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, foto:true, createdAt:now, updatedAt:now}}}, {merge:true});
+    }catch(e){
+      await FOTOS.doc(id).delete().catch(()=>{});   // jangan tinggalkan foto tanpa kedai
+      throw e;
+    }
     $('nama').value = ''; $('alamat').value = ''; $('nominal').value = ''; pos = null;
     mds = ''; renderMds();   // wajib pilih ulang tiap simpan supaya tidak salah atas nama
     setLocStatus('Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.');
-    toast('Tersimpan');
+    resetFoto();
+    toast('Tersimpan, foto pajangan ikut tersimpan');
   }catch(e){ console.error(e); toast('Gagal menyimpan: ' + e.message); }
   refreshSave();
 });
@@ -231,6 +342,8 @@ function issuesFor(it){
   if(!(isFinite(it.lat) && isFinite(it.lng))) out.push({t:'bad', m:'Lokasi belum ada'});
   const same = items.filter(o => o.id !== it.id && norm(o.nama) === norm(it.nama));
   if(same.length) out.push({t:'warn', m:'Nama kembar dengan ' + same.map(o=>o.mds).join(', ')});
+  if(!it.foto) out.push({t:'warn', m:'Foto pajangan belum ada'});
+  if(fotoCache[it.id] === null && it.foto) out.push({t:'warn', m:'Foto pajangan tidak ketemu'});
   if(isFinite(it.lat) && isFinite(it.lng)){
     const near = items.filter(o => o.id !== it.id && isFinite(o.lat) && isFinite(o.lng) && norm(o.nama) !== norm(it.nama) && dist(it, o) < NEAR_M);
     near.slice(0,2).forEach(o => out.push({t:'warn', m:`Lokasi dekat "${o.nama}" (${Math.round(dist(it,o))} m)`}));
@@ -262,23 +375,30 @@ function render(){
 
   const list = visible();
   $('list').innerHTML = list.length ? list.map(it=>{
-    const iss = issuesFor(it), c = checks[it.id];
+    const iss = issuesFor(it), c = checks[it.id], f = fotoCache[it.id];
     const hasLoc = isFinite(it.lat) && isFinite(it.lng);
     return `<div class="card item" data-id="${esc(it.id)}">
       <div class="top"><div class="nama">${esc(it.nama)}</div><div class="nom">${rp(it.nominal)}</div></div>
       <div class="meta"><span class="pill">${esc(it.mds)}</span><span>${esc(fmtDate(it.createdAt))}</span>${hasLoc ? `<span>${it.lat.toFixed(5)}, ${it.lng.toFixed(5)}</span>` : ''}</div>
       <div class="addr">${it.alamat ? '🏠 ' + esc(it.alamat) : '<span style="color:var(--muted)">Alamat belum diisi</span>'}</div>
+      <div class="pwrap">${f && f.data
+        ? `<img class="pimg" src="${esc(f.data)}" alt="Foto pajangan ${esc(it.nama)}" loading="lazy">`
+        : `<div class="pzone-st${it.foto ? '' : ' err'}">${it.foto ? 'Memuat foto…' : 'Foto pajangan belum ada'}</div>`}</div>
       ${iss.map(x=>`<div><span class="pill ${x.t}">${esc(x.m)}</span></div>`).join('')}
       ${c ? `<div class="result ${c.ok?'ok':'bad'}">${esc(c.msg)}</div>` : ''}
       <div class="actions">
         ${hasLoc ? `<a class="btn small ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="${mapsUrl(it)}" target="_blank" rel="noopener">Buka di Maps</a>` : ''}
         ${hasLoc ? `<button class="btn small ghost" data-act="check" type="button">Cek di lokasi</button>` : ''}
+        <button class="btn small ghost" data-act="photo" type="button">${it.foto ? 'Ganti foto' : 'Tambah foto'}</button>
         <button class="btn small ghost" data-act="addr" type="button">Ubah alamat</button>
         <button class="btn small ghost" data-act="relocate" type="button">Perbarui lokasi</button>
         <button class="btn small danger" data-act="del" type="button">Hapus</button>
       </div>
     </div>`;
   }).join('') : `<div class="card empty">${items.length ? 'Tidak ada kedai yang cocok dengan filter.' : 'Belum ada kedai. Tambahkan yang pertama di atas.'}</div>`;
+
+  // Foto diambil sekali saja per kedai, setelah kartunya tampil.
+  list.forEach(it=>{ if(it.foto && fotoCache[it.id] === undefined) loadFoto(it.id).then(()=> render()); });
 }
 
 $('list').addEventListener('click', async e=>{
@@ -287,7 +407,29 @@ $('list').addEventListener('click', async e=>{
   const act = b.dataset.act;
   if(act === 'del'){
     if(!confirm(`Hapus "${it.nama}"?`)) return;
-    try{ await DOC.update({['shops.' + id]: firebase.firestore.FieldValue.delete()}); toast('Dihapus'); }catch(err){ toast('Gagal menghapus: ' + err.message); }
+    try{
+      await DOC.update({['shops.' + id]: firebase.firestore.FieldValue.delete()});
+      await FOTOS.doc(id).delete().catch(()=>{});
+      delete fotoCache[id];
+      toast('Dihapus');
+    }catch(err){ toast('Gagal menghapus: ' + err.message); }
+    return;
+  }
+  if(act === 'photo'){
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.setAttribute('capture', 'environment');
+    inp.addEventListener('change', async ()=>{
+      const file = inp.files && inp.files[0]; if(!file) return;
+      b.disabled = true; b.textContent = 'Menyimpan foto…';
+      try{
+        const f = await compressFoto(file);
+        await saveFoto(id, f);
+        await DOC.set({shops:{[id]:{foto:true, fotoAt:new Date().toISOString(), updatedAt:new Date().toISOString()}}}, {merge:true});
+        toast(`Foto "${it.nama}" tersimpan`);
+      }catch(err){ console.error(err); toast('Gagal simpan foto: ' + err.message); }
+      render();
+    });
+    inp.click();
     return;
   }
   if(act === 'addr'){
@@ -337,7 +479,7 @@ DOC.onSnapshot(snap=>{
   $('conn').className = 'bar err';
 });
 
-renderMds(); render(); refreshSave();
+renderMds(); resetFoto(); render(); refreshSave();
 </script>
 </body>
 </html>
