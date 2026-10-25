@@ -55,6 +55,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .addr{font-size:14px;overflow-wrap:anywhere}
+#mdsHint.ok{color:var(--brand)!important;font-weight:600}
 .result{font-size:13px;border-radius:12px;padding:8px 12px}
 .result.ok{background:var(--brand-soft);color:var(--brand)}
 .result.bad{background:var(--bad-soft);color:var(--bad)}
@@ -74,12 +75,13 @@ a{color:var(--brand);font-weight:600}
   <div class="bar" id="conn">Menghubungkan ke database…</div>
 
   <div class="card stack">
-    <label class="f">Saya MDS
+    <label class="f">Pilih MDS <span class="pill bad" style="margin-left:6px">Wajib</span>
       <div class="seg" id="mdsPick" role="group" aria-label="Pilih MDS">
         <button type="button" data-mds="Eva" aria-pressed="false">Eva</button>
         <button type="button" data-mds="Asrar" aria-pressed="false">Asrar</button>
       </div>
     </label>
+    <div class="st" id="mdsHint" style="font-size:13px;color:var(--muted)"></div>
   </div>
 
   <h2>Tambah kedai</h2>
@@ -149,7 +151,6 @@ let items = [], mds = '', filterMds = '', issuesOnly = false;
 let pos = null;             // {lat,lng,acc} untuk form tambah
 let checks = {};            // hasil cek di tempat per id
 
-try{ mds = localStorage.getItem('kons-mds') || ''; }catch(e){}
 
 function toast(msg){
   const t = $('toast'); t.textContent = msg; t.hidden = false;
@@ -201,11 +202,12 @@ $('btnLoc').addEventListener('click', async ()=>{
 $('mdsPick').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   mds = b.dataset.mds;
-  try{ localStorage.setItem('kons-mds', mds); }catch(e){}
   renderMds(); refreshSave();
 });
 function renderMds(){
   document.querySelectorAll('#mdsPick button').forEach(b=> b.setAttribute('aria-pressed', b.dataset.mds === mds));
+  $('mdsHint').textContent = mds ? `Data akan tercatat atas nama ${mds}.` : 'Pilih dulu, belum ada yang terpilih.';
+  $('mdsHint').className = 'st' + (mds ? ' ok' : '');
 }
 
 $('btnSave').addEventListener('click', async ()=>{
@@ -217,6 +219,7 @@ $('btnSave').addEventListener('click', async ()=>{
   try{
     await DOC.set({shops:{[newId()]:{nama, alamat, nominal, mds, lat:pos.lat, lng:pos.lng, acc:pos.acc||0, createdAt:now, updatedAt:now}}}, {merge:true});
     $('nama').value = ''; $('alamat').value = ''; $('nominal').value = ''; pos = null;
+    mds = ''; renderMds();   // wajib pilih ulang tiap simpan supaya tidak salah atas nama
     setLocStatus('Lokasi belum diambil. Berdirilah di depan kedai lalu tekan tombol.');
     toast('Tersimpan');
   }catch(e){ console.error(e); toast('Gagal menyimpan: ' + e.message); }
