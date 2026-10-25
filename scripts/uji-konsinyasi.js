@@ -115,7 +115,15 @@ const pilihFoto = (input, nama) => {
 
   await wait(120);
   const card = doc.querySelector('#list .item');
-  check('Foto tampil di kartu daftar', !!card.querySelector('img.pimg'));
+  const btnLihat = card.querySelector('button[data-act="see"]');
+  const imgCard = card.querySelector('img.foto-big');
+  check('Kartu punya tombol Lihat foto', !!btnLihat && btnLihat.textContent.includes('Lihat foto pajangan'));
+  check('Foto tersembunyi sebelum diketuk', !!imgCard && imgCard.hidden === true);
+  click(btnLihat);
+  check('Foto muncul setelah diketuk', imgCard.hidden === false);
+  check('Tombol berubah jadi Sembunyikan', btnLihat.textContent.includes('Sembunyikan foto'));
+  click(btnLihat);
+  check('Foto tersembunyi lagi setelah diketuk kedua', imgCard.hidden === true);
 
   const oldId = 'kold1';
   await new Col('monitoring_noo').doc('konsinyasi_kedai').set({ shops: { [oldId]: { nama: 'Kedai Lama', alamat: 'Jl. Lama', nominal: 500000, mds: 'Asrar', lat: -5.1, lng: 119.4, createdAt: new Date().toISOString() } } }, { merge: true });

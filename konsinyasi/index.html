@@ -34,7 +34,9 @@ h2{font-size:17px;letter-spacing:-.01em;margin:22px 0 10px}
 .pzone-st.ok{color:var(--brand);font-weight:600}
 .pzone-st.err{color:var(--bad)}
 .pwrap{margin-top:2px}
-.pimg{width:100%;height:auto;display:block;border-radius:14px;background:#000}
+.foto-btn{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:10px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);font:600 14px var(--f);color:var(--ink);cursor:pointer;text-align:left}
+.foto-btn:disabled{opacity:.6;cursor:default}
+.foto-btn .chev{margin-left:auto;color:var(--muted);font-size:13px;font-weight:500}
 input[type=text],input[type=search],input[type=number],input[type=tel]{font:500 16px var(--f);color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;min-height:48px;width:100%}
 input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:#E8ECEA;border-radius:999px;padding:3px;gap:3px}
@@ -381,9 +383,12 @@ function render(){
       <div class="top"><div class="nama">${esc(it.nama)}</div><div class="nom">${rp(it.nominal)}</div></div>
       <div class="meta"><span class="pill">${esc(it.mds)}</span><span>${esc(fmtDate(it.createdAt))}</span>${hasLoc ? `<span>${it.lat.toFixed(5)}, ${it.lng.toFixed(5)}</span>` : ''}</div>
       <div class="addr">${it.alamat ? '🏠 ' + esc(it.alamat) : '<span style="color:var(--muted)">Alamat belum diisi</span>'}</div>
-      <div class="pwrap">${f && f.data
-        ? `<img class="pimg" src="${esc(f.data)}" alt="Foto pajangan ${esc(it.nama)}" loading="lazy">`
-        : `<div class="pzone-st${it.foto ? '' : ' err'}">${it.foto ? 'Memuat foto…' : 'Foto pajangan belum ada'}</div>`}</div>
+      <div class="pwrap">${it.foto
+        ? (f && f.data
+            ? `<button class="foto-btn" data-act="see" type="button">📷 Lihat foto pajangan <span class="chev">ketuk</span></button>
+               <img class="foto-big" src="${esc(f.data)}" alt="Foto pajangan ${esc(it.nama)}" hidden>`
+            : `<button class="foto-btn" data-act="see" type="button" disabled>📷 Memuat foto…</button>`)
+        : `<div class="pzone-st err">Foto pajangan belum ada</div>`}</div>
       ${iss.map(x=>`<div><span class="pill ${x.t}">${esc(x.m)}</span></div>`).join('')}
       ${c ? `<div class="result ${c.ok?'ok':'bad'}">${esc(c.msg)}</div>` : ''}
       <div class="actions">
@@ -405,6 +410,15 @@ $('list').addEventListener('click', async e=>{
   const b = e.target.closest('button[data-act]'); if(!b) return;
   const id = b.closest('[data-id]').dataset.id, it = items.find(i=>i.id === id); if(!it) return;
   const act = b.dataset.act;
+  if(act === 'see'){
+    // foto hanya dibuka saat diketuk, supaya daftar kedai tetap ringkas
+    const img = b.parentElement.querySelector('img.foto-big');
+    if(!img) return;
+    const buka = img.hidden;
+    img.hidden = !buka;
+    b.innerHTML = buka ? '📷 Sembunyikan foto <span class="chev">tutup</span>' : '📷 Lihat foto pajangan <span class="chev">ketuk</span>';
+    return;
+  }
   if(act === 'del'){
     if(!confirm(`Hapus "${it.nama}"?`)) return;
     try{
