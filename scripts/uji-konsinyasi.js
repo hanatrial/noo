@@ -83,8 +83,8 @@ const pilihFoto = (input, nama) => {
 
   $('nama').value = 'Kedai Bu Ani'; $('nama').dispatchEvent(new win.Event('input'));
   $('alamat').value = 'Jl. Veteran No. 12'; $('alamat').dispatchEvent(new win.Event('input'));
-  $('nominal').value = '1500000'; $('nominal').dispatchEvent(new win.Event('input'));
-  check('Nominal diformat ribuan', $('nominal').value === '1.500.000', $('nominal').value);
+  $('nominal').value = '50000'; $('nominal').dispatchEvent(new win.Event('input'));
+  check('Nominal diformat ribuan', $('nominal').value === '50.000', $('nominal').value);
   click(doc.querySelector('#mdsPick button[data-mds="Eva"]'));
   click($('btnLoc'));
   await wait(60);
@@ -105,7 +105,7 @@ const pilihFoto = (input, nama) => {
   const ids = Object.keys(store.get('monitoring_noo/konsinyasi_kedai').shops);
   const id = ids[0], s = store.get('monitoring_noo/konsinyasi_kedai').shops[id] || {};
   check('Kedai tersimpan', ids.length === 1);
-  check('Data kedai lengkap', s.nama === 'Kedai Bu Ani' && s.alamat === 'Jl. Veteran No. 12' && s.nominal === 1500000 && s.mds === 'Eva');
+  check('Data kedai lengkap', s.nama === 'Kedai Bu Ani' && s.alamat === 'Jl. Veteran No. 12' && s.nominal === 50000 && s.mds === 'Eva');
   check('Penanda foto di kedai', s.foto === true);
   const f = store.get('monitoring_noo/konsinyasi_kedai/foto/' + id);
   check('Foto tersimpan di subkoleksi', !!f && /^data:image\/jpeg/.test(f.data));
