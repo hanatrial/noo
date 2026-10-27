@@ -604,17 +604,21 @@ function vBsp(){
   const okItem=x=>bf==="all"||(bf==="bn"?isBn(x.nm):!isBn(x.nm)&&x.br===(bf==="ns"?"NUTRISARI":"HI LO"));
   const L=bspList().filter(okItem),list=L.filter(x=>!q||x.nm.toLowerCase().includes(q));
   const used=new Set(BSP.items.flatMap(i=>i[7]));
-  const other=BSP.rows.filter(r=>!used.has(r[0])&&(!q||(r[0]+" "+r[1]).toLowerCase().includes(q)));
+  const isX=r=>/^NFI-X[13]-/.test(r[0]),hit=r=>!q||(r[0]+" "+r[1]).toLowerCase().includes(q);
+  const bonusStok=bf==="bn"?BSP.rows.filter(r=>isX(r)&&hit(r)):[];   // filter Bonus: ikut tampil stok berkode NFI-X1 / NFI-X3 (tanpa DOI)
+  const other=BSP.rows.filter(r=>!used.has(r[0])&&hit(r)&&!(bf==="bn"&&isX(r)));
   const chips=[["all","Semua"],["ns","Nutrisari"],["hl","Hilo"],["bn","Bonus"]].map(([k,l])=>`<button type="button" class="bfb" data-bf="${k}" aria-pressed="${bf===k}">${l}</button>`).join("");
   const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0);
   const cards=list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
     <span class="rt"><span class="v">${x.gb?f1(x.stok):f0(x.stok)}<small>STOK CTN</small></span><span class="d ${doiCls(x.doi)}">${x.doi==null?"–":f0(x.doi)}<small>${x.doi==null?"TANPA SALES":"HARI DOI"}</small></span></span>
     <span class="sb">Rata-rata 3 bln <b>${f1(x.avg)}</b> ctn/bln · ${BSP.bulan.map((m,i)=>m+" "+f0([x.j,x.a,x.s][i])).join(" · ")}${x.note}${bspRaw(x.ks)?" · stok "+esc(bspRaw(x.ks)):""}${x.ks.length?"":" · tidak ada di file stok"}</span></div>`).join("");
+  const bc=bonusStok.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const oc=other.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   return `<h2>Stok BSP · DOI</h2>
   <div class="card stack"><div class="bfs">${chips}</div><input type="search" id="qs" value="${esc(S.qs||"")}" placeholder="Cari item, mis. jeruk peras / thai tea" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
   <div class="note">${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (rata-rata 3 bln ÷ 30), sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar</div></div>
   <div class="slims" style="margin-top:8px">${cards||'<div class="card empty">Tidak ada item yang cocok.</div>'}</div>
+  ${bonusStok.length?`<div class="lbl" style="margin:20px 0 8px">Bonus di stok · kode NFI-X1 / NFI-X3 (tanpa DOI)</div><div class="slims">${bc}</div>`:""}
   ${other.length?`<div class="lbl" style="margin:20px 0 8px">Stok di luar daftar penjualan (tanpa DOI)</div><div class="slims">${oc}</div>`:""}
   <div style="height:24px"></div>`;
 }
