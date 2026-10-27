@@ -598,7 +598,7 @@ function bspList(){
     if(g)g.anak.forEach(([nm,r])=>{const c=find(nm),y=mk(c,r/g.r);x.j+=y.j;x.a+=y.a;x.s+=y.s;x.avg+=y.avg;x.stok+=y.stok;x.ks=x.ks.concat(c[7]);x.gb=true;
       x.note+=` · gabungan ${g.r}R + ${r}R × ${r}/${g.r} (${f1(bspStok(c[7]))} ctn stok, ${f1(c[5])} ctn/bln jadi ${f1(y.avg)})`;});
     x.doi=x.avg>0?x.stok/(x.avg/30):null;return x;
-  }).sort((x,y)=>(x.doi==null)-(y.doi==null)||(x.doi||0)-(y.doi||0)||x.nm.localeCompare(y.nm));
+  }).sort((x,y)=>S.bs==="ap"?y.avg-x.avg||x.nm.localeCompare(y.nm):(x.doi==null)-(y.doi==null)||(x.doi||0)-(y.doi||0)||x.nm.localeCompare(y.nm));   // urut: DOI terendah (bawaan) atau AP3M (rata-rata 3 bln, ctn/bln) tertinggi
 }
 function vBsp(){
   const q=(S.qs||"").trim().toLowerCase();
@@ -613,7 +613,7 @@ function vBsp(){
   const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0);
   const cards=list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
     <span class="rt"><span class="v">${x.gb?f1(x.stok):f0(x.stok)}<small>STOK CTN</small></span><span class="d ${doiCls(x.doi)}">${x.doi==null?"–":f0(x.doi)}<small>${x.doi==null?"TANPA SALES":"HARI DOI"}</small></span></span>
-    <span class="sb">Rata-rata 3 bln <b>${f1(x.avg)}</b> ctn/bln · ${BSP.bulan.map((m,i)=>m+" "+f0([x.j,x.a,x.s][i])).join(" · ")}${x.note}${bspRaw(x.ks)?" · stok "+esc(bspRaw(x.ks)):""}${x.ks.length?"":" · tidak ada di file stok"}</span></div>`).join("");
+    <span class="sb">AP3M <b>${f1(x.avg)}</b> ctn/bln · ${BSP.bulan.map((m,i)=>m+" "+f0([x.j,x.a,x.s][i])).join(" · ")}${x.note}${bspRaw(x.ks)?" · stok "+esc(bspRaw(x.ks)):""}${x.ks.length?"":" · tidak ada di file stok"}</span></div>`).join("");
   const bc=bonusStok.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const oc=other.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const sumber=BSP.sumber==="diunggah"?"Diunggah manual":BSP.sumber==="server"?"Dari server (stok-bsp.json)":"Data bawaan";
@@ -627,8 +627,8 @@ function vBsp(){
     <div id="bspmsg" class="note">${esc(S.bspMsg||"")}</div>
     ${BSP.sumber==="diunggah"?`<button class="btn ghost" id="bspreset" type="button">Kembali ke data server / bawaan</button>`:""}
   </div>
-  <div class="card stack"><div class="bfs">${chips}</div><input type="search" id="qs" value="${esc(S.qs||"")}" placeholder="Cari item, mis. jeruk peras / thai tea" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
-  <div class="note">${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (rata-rata 3 bln ÷ 30), sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar</div></div>
+  <div class="card stack"><div class="bfs">${chips}</div><div class="bfs">${[["doi","Urut: DOI terendah"],["ap","Urut: AP3M tertinggi"]].map(([k,l])=>`<button type="button" class="bfb" data-bs="${k}" aria-pressed="${(S.bs||"doi")===k}">${l}</button>`).join("")}</div><input type="search" id="qs" value="${esc(S.qs||"")}" placeholder="Cari item, mis. jeruk peras / thai tea" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
+  <div class="note">${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = rata-rata penjualan 3 bln, sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar</div></div>
   <div class="slims" style="margin-top:8px">${cards||'<div class="card empty">Tidak ada item yang cocok.</div>'}</div>
   ${bonusStok.length?`<div class="lbl" style="margin:20px 0 8px">Bonus di stok · kode NFI-X1 / NFI-X3 (tanpa DOI)</div><div class="slims">${bc}</div>`:""}
   ${other.length?`<div class="lbl" style="margin:20px 0 8px">Stok di luar daftar penjualan (tanpa DOI)</div><div class="slims">${oc}</div>`:""}
@@ -685,7 +685,7 @@ function restoreFocus(){
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
-  const bfc=e.target.closest(".bfb");if(bfc){S.bf=bfc.dataset.bf;refresh();return}
+  const bfc=e.target.closest(".bfb");if(bfc){if(bfc.dataset.bs)S.bs=bfc.dataset.bs;else S.bf=bfc.dataset.bf;refresh();return}
   const pk=e.target.closest(".pick, button.slim[data-k]");if(pk){S.item=pk.dataset.k;refresh();return}
   const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
