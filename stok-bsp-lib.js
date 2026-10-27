@@ -40,14 +40,33 @@
     var a = sheetRows(XLSX, data, type), hi = -1, i;
     for (i = 0; i < a.length; i++) if (str(a[i][2]).toLowerCase() === "item" && /rata2/i.test(a[i].join("|"))) { hi = i; break; }
     if (hi < 0) throw new Error("Header 'Item / Rata2 3 Bln' tidak ditemukan. Pastikan ini file item BSP polos.");
-    var h = a[hi].map(str), bulan = [3, 4, 5].map(function (j) { return h[j].replace(/\s*\(.*$/, ""); });
+    var h = a[hi].map(str), bulan = [3, 4, 5].map(function (j) { return h[j].replace(/\s.*$/, ""); });
+    var cAvg = 6, cNet = 7;
+    h.forEach(function (x, j) { if (/rata2/i.test(x) && cAvg === 6 && j >= 6 && !/setelah|retur/i.test(x)) cAvg = j; });
+    h.forEach(function (x, j) { if (/netto/i.test(x)) cNet = j; });
     var num = function (v) { var n = parseFloat(String(v).replace(/,/g, "")); return isFinite(n) ? n : 0; };
     var items = [];
     for (i = hi + 1; i < a.length; i++) {
       var r = a[i], nm = str(r[2]); if (!nm || /^total$/i.test(nm)) continue;
-      items.push([nm, str(r[1]), +num(r[3]).toFixed(2), +num(r[4]).toFixed(2), +num(r[5]).toFixed(2), +num(r[6]).toFixed(2), Math.round(num(r[7]))]);
+      items.push([nm, str(r[1]), +num(r[3]).toFixed(2), +num(r[4]).toFixed(2), +num(r[5]).toFixed(2), +num(r[cAvg]).toFixed(2), Math.round(num(r[cNet]))]);
     }
     return { bulan: bulan, items: items };
+  }
+
+  /* Sehat Indah: sheet "STOK ..." di file ekspor penjualan (PENJUALAN_ALL_*.xlsx). Baris: {k,n,s,t,h,p} sama dengan yang disimpan insentif. */
+  function parseShiStok(XLSX, data, type) {
+    var wb = XLSX.read(data, { type: type || "array" });
+    var nm = wb.SheetNames.filter(function (n) { return /^stok/i.test(str(n)); })[0];
+    if (!nm) throw new Error("Sheet 'STOK ...' tidak ditemukan. Pakai file ekspor Sehat Indah yang punya sheet stok.");
+    var a = XLSX.utils.sheet_to_json(wb.Sheets[nm], { defval: null }), rows = [];
+    a.forEach(function (r) {
+      if (r.kd_brg == null || r.nm_brg == null) return;
+      var p = str(r.pemasok).toUpperCase(), n = str(r.nm_brg);
+      if (p === "P00008" || /^(NS |HI ?LO|LOKALATE|TS |BONUS|GIM)/i.test(n))
+        rows.push({ k: str(r.kd_brg), n: n, s: Number(r.stok) || 0, t: str(r.stk_kms), h: Number(r.hrg_jual) || 0, p: str(r.pemasok) });
+    });
+    if (!rows.length) throw new Error("Tidak ada barang Nutrifood di sheet " + nm + ".");
+    return { sheet: nm, rows: rows };
   }
 
   /* --- pencocokan nama item -> kode stok --- */
@@ -89,5 +108,5 @@
     });
     return { items: out, tanpaKode: notes };
   }
-  return { parseStok: parseStok, parseItems: parseItems, mapItems: mapItems };
+  return { parseStok: parseStok, parseItems: parseItems, mapItems: mapItems, parseShiStok: parseShiStok };
 });

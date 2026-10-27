@@ -89,7 +89,7 @@ h2{font:700 20px var(--f-display);margin:22px 0 10px;letter-spacing:.04em;text-t
 a{color:var(--accent)}
 select,input[type=number]{font:500 14px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:9px 10px;min-height:42px}
 input[type=number]{width:76px}
-nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;inset:auto 0 0 0;z-index:6;background:var(--graphite);display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab{border:0;border-top:4px solid transparent;background:transparent;color:#9FADB8;padding:7px 4px 9px;font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px}
 .tab .no{font:600 12px var(--f-mono);width:22px;height:22px;border-radius:4px;border:1.5px solid currentColor;display:grid;place-items:center}
 .tab[aria-selected="true"]{color:#fff;border-top-color:var(--rack)}
@@ -245,6 +245,7 @@ body[data-tab="item"] h2::before,body[data-tab="brg"] h2::before{height:14px;wid
   <button class="tab" role="tab" data-tab="item" aria-selected="false"><span class="no">4</span>Cek item</button>
   <button class="tab" role="tab" data-tab="brg" aria-selected="false"><span class="no">5</span>Cek cabang</button>
   <button class="tab" role="tab" data-tab="bsp" aria-selected="false"><span class="no">6</span>Stok BSP</button>
+  <button class="tab" role="tab" data-tab="shi" aria-selected="false"><span class="no">7</span>Stok SHI</button>
 </nav>
 <div id="toast" class="toast" hidden></div>
 
@@ -265,13 +266,15 @@ const CN={TRADITIONAL:"Traditional",MODERN:"Modern"};
 const BN={PALU:"Palu",POSO:"Poso",KENDARI:"Kendari",MAMUJU:"Mamuju",BAUBAU:"Bau-Bau",MANADO:"Manado",GORONTALO:"Gorontalo",MAKASSAR:"Makassar",BONE:"Bone",PAREPARE:"Parepare",PALOPO:"Palopo"};
 let BSP={"periode":"27 Okt 2026","gudang":"MKS02","file":"Update stok barang polos 26 Okt 2026.xls","rows":[["NFI-HAP-04","HILO 3IN1 COKLAT BELGIAN PLS 12RX10SX25G","15 MASTER BOX 4 RENCENG","","","","","","","15 MASTER BOX 4 RENCENG"],["NFI-HLD-04","HILO DRINK CHOCOLATE 15RX10SX14G 10+1","","","5 SACHET","","","","","5 SACHET"],["NFI-HLD-08","HILO DRINK CREAMY MARIE PLS 15RX10SX14G","74 MASTER BOX","","5 RENCENG","","","","","74 MASTER BOX 5 RENCENG"],["NFI-HLD-12","HILO DRINK THAI TEA PLS 12RX10SX15G","826 MASTER BOX 11 RENCENG","","","","","","","826 MASTER BOX 11 RENCENG"],["NFI-HSS-04","HILO SCHOOL STRAWBERRY PLS 12RX10SX27G","20 MASTER BOX 2 RENCENG","","5 RENCENG","","","","","20 MASTER BOX 7 RENCENG"],["NFI-HSS-05","HILO SCHOOL VANILLA PLS 12RX10SX27G/26G","44 MASTER BOX 8 RENCENG","","4 MASTER BOX 11 RENCENG 8 SACHET","","","","","49 MASTER BOX 7 RENCENG 8 SACHET"],["NFI-HTT-01","HILO THAI TEA PLS 8RX10SX15G","1 RENCENG","","10 MASTER BOX 6 RENCENG 2 SACHET","","","","","10 MASTER BOX 7 RENCENG 2 SACHET"],["NFI-HTT-04","HILO ES KETAN HITAM PLS 8RX10SX14G","4 RENCENG","","2 MASTER BOX 1 RENCENG","","","","","2 MASTER BOX 5 RENCENG"],["NFI-HTT-15","HILO ES KETAN HITAM PLS 12RX10SX14G","40 MASTER BOX","","","","","","","40 MASTER BOX"],["NFI-NJM-01","NS JERUK MAROKO PLS 14GR 4PX40'S","","","2 RENCENG","","","","","2 RENCENG"],["NFI-NJM-04","NS JERUK MAROKO PLS 4PX40SX11G","62 MASTER BOX 3 PACK 3 RENCENG","","13 MASTER BOX 3 RENCENG 9 SACHET","","","","","76 MASTER BOX 2 RENCENG 9 SACHET"],["NFI-NJP-03","NS JERUK PERAS PLS 14GR 18X40'S","1261 MASTER BOX 13 PACK","","5 MASTER BOX 6 PACK 2 RENCENG","","","","","1267 MASTER BOX 1 PACK 2 RENCENG"],["NFI-NLT-06","NS LYCHEE TEA REF 12BAGX400G","1 MASTER BOX","","","","","","","1 MASTER BOX"],["NFI-NSP-05","NS PREMIUM JUS MANGGA REF 12BAGX420G","4 MASTER BOX","","","","","","","4 MASTER BOX"],["NFI-NTL-06","NS TEA LEMON TEA REF 12BAGX400G","18 MASTER BOX 6 DUS","","9 DUS","","","","","19 MASTER BOX 3 DUS"],["NFI-NWS-14","LOKALATE KOPI ALPUKET PLS 15G 12RX10'S","6 RENCENG","","2 RENCENG 5 SACHET","","","","","8 RENCENG 5 SACHET"],["NFI-NWS-20","LOKALATE KOPI BERONDONG PLS 15G 12RX10'S","","","1 MASTER BOX 8 RENCENG 5 SACHET","","","","","1 MASTER BOX 8 RENCENG 5 SACHET"],["NFI-NWS-28","LOKALATE KOPI PIS BAKAR EPE 15G 12RX10'S","","","1 RENCENG","","","","","1 RENCENG"],["NFI-NWS-35","NS WDANK SERH JAHE NIPIS PLS 12RX10SX11G","6 MASTER BOX 9 RENCENG","","1 MASTER BOX","","","","","7 MASTER BOX 9 RENCENG"],["NFI-P18-40","NS JERUK PERAS PLS 18PX40SX14G 10SFREE1S","","","8 PACK","","","","","8 PACK"],["NFI-PL4-15","N'SARI ES RUJAK PLS 13G 4PX40S","","","1 RENCENG","","","","","1 RENCENG"],["NFI-PL4-16","N'SARI KELAPA MUDA PLS 11G 4PX40S","23 MASTER BOX 3 PACK 3 RENCENG","","5 MASTER BOX 3 PACK 2 RENCENG 7 SACHET","","","","","29 MASTER BOX 3 PACK 1 RENCENG 7 SACHET"],["NFI-PL4-18","N'SARI LECI PLS 11G 4PX40S","79 MASTER BOX 3 RENCENG","","10 MASTER BOX 3 RENCENG 3 SACHET","","","","","89 MASTER BOX 1 PACK 2 RENCENG 3 SACHET"],["NFI-PL4-23","N'SARI JERUK MANADO PLS 11G 4PX40S","4 MASTER BOX 1 PACK 2 RENCENG","","1 MASTER BOX 2 PACK 2 RENCENG 4 SACHET","","","","","6 MASTER BOX 4 SACHET"],["NFI-PL4-29","N'SARI SEMANGKA PLS 13G 4PX40S","","","1 RENCENG","","","","","1 RENCENG"],["NFI-PL4-30","N'SARI COCOPANDAN PLS 13G 4PX40S","","","2 PACK 4 SACHET","","","","","2 PACK 4 SACHET"],["NFI-PL4-39","NS ANGGUR HIJAU PLS 4PX40SX11G","21 MASTER BOX 1 PACK","","5 MASTER BOX 2 PACK 2 RENCENG 4 SACHET","","","","","26 MASTER BOX 3 PACK 2 RENCENG 4 SACHET"],["NFI-PL4-40","NS LESS SUGAR BELIMBING PLS 4PX40SX6G","2 MASTER BOX 3 PACK","","5 MASTER BOX 1 PACK 2 RENCENG","","","","","8 MASTER BOX 2 RENCENG"],["NFI-PL4-42","NS LEMON TEA PLS 4PX40SX11G","274 MASTER BOX 2 PACK 1 RENCENG","","11 MASTER BOX 1 PACK 3 RENCENG 9 SACHET","","","","","286 MASTER BOX 9 SACHET"],["NFI-PL4-43","NS MADU LEMON PLS 4PX40SX11G","26 MASTER BOX 2 PACK 1 RENCENG","","1 MASTER BOX 3 PACK 1 RENCENG 8 SACHET","","","","","28 MASTER BOX 1 PACK 2 RENCENG 8 SACHET"],["NFI-PL4-44","NS MANGGA GANDARIA PLS 4PX40SX11G","63 MASTER BOX 3 RENCENG","","10 MASTER BOX 7 SACHET","","","","","73 MASTER BOX 3 RENCENG 7 SACHET"],["NFI-PL4-45","NS LYCHEE TEA PLS 4PX40SX11G","113 MASTER BOX 3 PACK 2 RENCENG","","10 MASTER BOX 1 PACK 1 RENCENG 5 SACHET","","","","","124 MASTER BOX 3 RENCENG 5 SACHET"],["NFI-PL4-46","NS JERUK (EX) MANIS PLS 4PX40SX11G","279 MASTER BOX","","4 MASTER BOX 3 PACK 1 RENCENG 2 SACHET","","","","","283 MASTER BOX 3 PACK 1 RENCENG 2 SACHET"],["NFI-PL4-50","NS SEMANGKA PLS 4PX40SX11G","20 MASTER BOX 2 PACK 1 RENCENG","","17 MASTER BOX 1 RENCENG 2 SACHET","","","","","37 MASTER BOX 2 PACK 2 RENCENG 2 SACHET"],["NFI-PL4-51","NS MARKISA PLS 4PX40SX11G","314 MASTER BOX 3 PACK 3 RENCENG","","5 MASTER BOX 2 RENCENG","","","","","320 MASTER BOX 1 RENCENG"],["NFI-PL4-54","NS COCOPANDAN PLS 4PX40SX11G","44 MASTER BOX 2 PACK 3 RENCENG","","7 MASTER BOX 1 PACK 1 RENCENG 7 SACHET","","","","","52 MASTER BOX 7 SACHET"],["NFI-PL4-56","NS ES RUJAK PLS 4PX40SX11G","","","2 PACK 2 RENCENG","","","","","2 PACK 2 RENCENG"],["NFI-PL4-57","NS LESS SUGAR JERUK BALI PLS 4PX40SX6G","1 RENCENG","","9 MASTER BOX 9 SACHET","","","","","9 MASTER BOX 1 RENCENG 9 SACHET"],["NFI-PL4-60","NS ORANGE TEA PLS 4PX40SX11G","4 MASTER BOX 3 PACK 3 RENCENG","","14 MASTER BOX 2 PACK 3 SACHET","","","","","19 MASTER BOX 1 PACK 3 RENCENG 3 SACHET"],["NFI-PL4-61","NS APPLE TEA PLS 4PX40SX11G","80 MASTER BOX","","16 MASTER BOX 3 PACK 8 SACHET","","","","","96 MASTER BOX 3 PACK 8 SACHET"],["NFI-PL4-72","NS LESS SUGAR JERUK SONKIT 4PX40SX6G","27 MASTER BOX 1 RENCENG","","2 RENCENG","","","","","27 MASTER BOX 3 RENCENG"],["NFI-THC-19","HILO AVOCADO CHOCOLATE 15RX10SX14G","84 MASTER BOX 13 RENCENG","","9 MASTER BOX 4 RENCENG 3 SACHET","","","","","94 MASTER BOX 2 RENCENG 3 SACHET"],["NFI-THC-20","HILO CHOCOLATE PLS 15RX10SX14G","277 MASTER BOX 3 RENCENG","","6 MASTER BOX 1 RENCENG 1 SACHET","","","","","283 MASTER BOX 4 RENCENG 1 SACHET"],["NFI-TSD-12","DIABETAMIL SWT PLS 10PX80SX1G","1 MASTER BOX 4 PACK","","","","","","","1 MASTER BOX 4 PACK"],["NFI-TSD-18","TS DIABETAMIL SWT PLS 10PX80SX1G HANGER","12 MASTER BOX 3 PACK","","","","","","","12 MASTER BOX 3 PACK"],["NFI-X1-GLS-63","GELAS LOKALATE","21 PIECE","","","","","","","21 PIECE"],["NFI-X1-HGR-01","HANGER NUTRISARI","39 PIECE","","","","","","","39 PIECE"],["NFI-X1-HTT-01","HILO THAI TEA PLS 8RX10SX15G BNS","2 RENCENG","","","","","","","2 RENCENG"],["NFI-X1-KAO-18","KAOS LOKALATE","30 PIECE","","","","","","","30 PIECE"],["NFI-X1-KAO-31","NS KAOS 2025 SI JERUK DI KOLAM","69 PIECE","","","","","","","69 PIECE"],["NFI-X1-KAO-33","NS KAOS 2025 SI JERUK MAIN VOLI","90 PIECE","","","","","","","90 PIECE"],["NFI-X1-KAO-34","KAOS HILO TRADISIONAL 2025","21 PIECE","","","","","","","21 PIECE"],["NFI-X1-SRG-15","SARUNG 2025","146 PIECE","","","","","","","146 PIECE"],["NFI-X1-SRG-16","NS SARUNG 2026","346 PIECE","","","","","","","346 PIECE"],["NFI-X3-NJP-03","NS JERUK PERAS PLS 14GR 18X40'S BNS","19 MASTER BOX 11 PACK 3 RENCENG","","","","","","","19 MASTER BOX 11 PACK 3 RENCENG"]],"items":[["NS JERUK PERAS PLS 18PX40SX14G","NUTRISARI",1110.83,1007.92,941.6,1020.12,2372002633,["NFI-NJP-03"]],["HI LO DRINK THAI TEA PLS 12RX10SX15G","HI LO",0.0,454.71,636.96,363.89,134140326,["NFI-HLD-12"]],["HI LO DRINK CHOCOLATE PLS 15RX10SX14G","HI LO",162.77,189.18,236.49,196.15,133386424,["NFI-THC-20","NFI-HLD-04"]],["NS MARKISA PLS 4PX40SX11G","NUTRISARI",250.08,254.11,275.35,259.85,119447897,["NFI-PL4-51"]],["NS JERUK (EX) MANIS PLS 4PX40SX11G","NUTRISARI",208.43,189.22,247.36,215.0,99581131,["NFI-PL4-46"]],["NS LEMON TEA PLS 4PX40SX11G","NUTRISARI",233.66,249.05,207.95,230.22,93616081,["NFI-PL4-42"]],["HI LO DRINK THAI TEA PLS 8RX10SX15G","HI LO",462.97,0.0,0.0,154.32,57296102,["NFI-HTT-01"]],["HI LO SCHOOL VANILLA SUSU PLS 12RX10SX27G","HI LO",40.14,50.96,50.12,47.07,51378094,["NFI-HSS-05"]],["NS LYCHEE TEA PLS 4PX40SX11G","NUTRISARI",94.39,107.16,105.03,102.19,39505544,["NFI-PL4-45"]],["HI LO DRINK AVOCADO CHOCOLATE PLS 15RX10SX14G","HI LO",62.31,44.45,78.42,61.73,36154476,["NFI-THC-19"]],["NS MANGGA GANDARIA PLS 4PX40SX11G","NUTRISARI",94.12,84.24,99.11,92.49,34483193,["NFI-PL4-44"]],["HI LO SCHOOL STRAWBERRY PLS 12RX10SX27G","HI LO",26.0,36.9,34.87,32.59,33867008,["NFI-HSS-04"]],["HI LO DRINK CREAMY MARIE PLS 15RX10SX14G","HI LO",68.66,22.59,69.43,53.56,33815492,["NFI-HLD-08"]],["NS LECI PLS 4PX40SX11G","NUTRISARI",113.69,118.27,113.85,115.27,33015307,["NFI-PL4-18"]],["NS JERUK MAROKO PLS 4PX40SX11G","NUTRISARI",156.61,93.24,82.39,110.75,28124704,["NFI-NJM-04"]],["NS SEMANGKA PLS 4PX40SX11G","NUTRISARI",90.21,90.23,89.31,89.92,20968150,["NFI-PL4-50"]],["NS COCOPANDAN PLS 4PX40SX11G","NUTRISARI",77.75,42.66,47.65,56.02,19661551,["NFI-PL4-54"]],["NS LEMON TEA REF PLS 12BAGX400G","NUTRISARI",13.04,16.0,14.58,14.54,16228808,["NFI-NTL-06"]],["NS LESS SUGAR JERUK SONKIT PLS 4PX40SX6G","NUTRISARI",31.13,29.31,33.31,31.25,15607711,["NFI-PL4-72"]],["NS KELAPA MUDA PLS 4PX40SX11G","NUTRISARI",37.49,42.41,44.45,41.45,13257412,["NFI-PL4-16"]],["NS MADU LEMON PLS 4PX40SX11G","NUTRISARI",31.76,36.43,30.83,33.01,11960100,["NFI-PL4-43"]],["HI LO 3IN1 SUSU COKLAT BELGIA PLS 12RX10SX25G","HI LO",5.08,16.25,10.17,10.5,10486612,["NFI-HAP-04"]],["NS APPLE TEA PLS 4PX40SX11G","NUTRISARI",64.12,34.76,51.35,50.08,8784019,["NFI-PL4-61"]],["NS W'DANK SEREH JAHE NIPIS PLS 12RX10SX11G","NUTRISARI",13.63,7.17,10.17,10.32,5193425,["NFI-NWS-35"]],["HI LO DRINK ES KETAN HITAM PLS 15RX10SX14G","HI LO",0.0,18.25,30.45,16.23,4984947,["NFI-HTT-15"]],["NS ANGGUR HIJAU PLS 4PX40SX11G","NUTRISARI",48.33,30.17,26.0,34.83,3485879,["NFI-PL4-39"]],["NS ORANGE TEA PLS 4PX40SX11G","NUTRISARI",87.51,55.79,38.21,60.5,3140193,["NFI-PL4-60"]],["NS JERUK MANADO PLS 4PX40SX11G","NUTRISARI",11.94,18.71,8.03,12.89,3050833,["NFI-PL4-23"]],["HI LO DRINK ES KETAN HITAM PLS 8RX10SX14G","HI LO",22.82,0.0,0.0,7.61,2142077,["NFI-HTT-04"]],["NS LOKALATE KOPI ALPUKAT PLS 12RX10SX15G","NUTRISARI",3.81,2.42,3.83,3.35,965505,["NFI-NWS-14"]],["NS PREMIUM JUS MANGGA REF PLS 12BAGX420G","NUTRISARI",1.0,0.0,0.0,0.33,456000,["NFI-NSP-05"]],["TS DIABETAMIL SWT PLS 10PX80SX1G","TS",0.0,0.0,0.3,0.1,93000,["NFI-TSD-12"]],["NS ES RUJAK PLS 4PX40SX11G","NUTRISARI",0.0,0.67,1.12,0.6,23734,["NFI-PL4-56"]],["BONUS HI LO DRINK CREAMY MARIE PLS 15RX10SX14G","HI LO",0.0,17.0,7.6,8.2,0,[]],["BONUS NS JERUK PERAS PLS 18PX40SX14G","NUTRISARI",14.33,14.17,6.33,11.61,0,["NFI-P18-40"]],["HI LO DRINK ES PISANG IJO PLS 8RX10SX15G","HI LO",0.17,0.0,0.0,0.06,-39000,[]],["NS LOKALATE KOPI PISANG BAKAR EPE PLS 12RX10SX15G","NUTRISARI",2.67,0.0,1.0,1.22,-43825,["NFI-NWS-28"]],["NS LOKALATE KOPI BERONDONG PLS 12RX10SX15G","NUTRISARI",3.33,6.07,0.08,3.16,-151250,["NFI-NWS-20"]],["NS LESS SUGAR BELIMBING PLS 4PX40SX6G","NUTRISARI",9.21,8.5,7.09,8.27,-1482522,["NFI-PL4-40"]],["NS LESS SUGAR JERUK BALI PLS 4PX40SX6G","NUTRISARI",23.98,21.61,12.23,19.27,-2031097,["NFI-PL4-57"]]],"itemFile":"item_bsp_polos_avg_3bln_ctn.xlsx","bulan":["Jul","Agu","Sep"],"gabung":[{"base":"HI LO DRINK THAI TEA PLS 12RX10SX15G","r":12,"anak":[["HI LO DRINK THAI TEA PLS 8RX10SX15G",8]]},{"base":"HI LO DRINK ES KETAN HITAM PLS 15RX10SX14G","r":12,"anak":[["HI LO DRINK ES KETAN HITAM PLS 8RX10SX14G",8]]}]};
 const BSP_BAWAAN=JSON.stringify(BSP);BSP.sumber="bawaan";
+let SHI={"periode":"26 Okt 2026","sheet":"STOK 26 OKT 26","file":"PENJUALAN_ALL_OKT_2026.xlsx","rows":[{"k":"BNSIGR","n":"BONUS ASO - IGR","s":72,"t":"1CRT","h":0,"p":"P00008"},{"k":"PASE","n":"BONUS ASO - PASEVIT","s":100,"t":"1CRT, 28Rtg","h":0,"p":"P00008"},{"k":"BTL","n":"BONUS BOTOL KECAP","s":0,"t":"","h":0,"p":"N00001"},{"k":"CLM","n":"BONUS CELEMEK","s":14,"t":"14PC","h":0,"p":"SP 24"},{"k":"BNSG","n":"BONUS GELAS BIR","s":-336,"t":"-28LSN","h":0,"p":"N00001"},{"k":"BNSH","n":"BONUS GELAS HILO","s":-3,"t":"-1CRT, 45PC","h":0,"p":"P00008"},{"k":"BNSLK","n":"BONUS GELAS LOKALATE","s":-46,"t":"-1CRT, 2PC","h":0,"p":"P00008"},{"k":"BNSC","n":"BONUS GELAS NUTRISARI","s":-17,"t":"-17PC","h":0,"p":"P00008"},{"k":"BNSWD","n":"BONUS GELAS WDANK","s":0,"t":"","h":0,"p":"SP22"},{"k":"BNSM","n":"BONUS MANGKOK","s":-394,"t":"-33LSN, 2PCS","h":0,"p":"N00001"},{"k":"BNSP","n":"BONUS PIRING","s":0,"t":"","h":0,"p":""},{"k":"BNSS","n":"BONUS SARUNG","s":-54,"t":"-6CRT, 6PC","h":0,"p":"P00008"},{"k":"016","n":"DIABETAMIL SWEETENER PLS 10PX80SX1G","s":47,"t":"4CRT, 7PAK","h":34410,"p":"P00008"},{"k":"1105516","n":"GIMBORI MAKARONI BBQ 25g (6X10)","s":0,"t":"","h":1568.3400000000001,"p":"SP 24"},{"k":"1105521","n":"GIMBORI MAKARONI SPICY 25g(6X10 )","s":0,"t":"","h":1568.3400000000001,"p":"SP 24"},{"k":"GIMIK","n":"GIMIK NS ASO PLS 18X40X14G","s":48,"t":"48Rcg","h":0,"p":"P00008"},{"k":"GIM15","n":"GIMMICK ASO (OKT-NOV 26)","s":1350,"t":"18CRT, 54Rcg","h":0,"p":"P00008"},{"k":"GIM12","n":"GIMMIK NS ASO (MEI-JUNI)","s":20,"t":"20Rcg","h":0,"p":"P00008"},{"k":"005","n":"HILO 3IN1  BELGIAN CHOCOLATE PLS 12X10SX25 GR","s":0,"t":"","h":34965,"p":"P00008"},{"k":"004","n":"HILO CHOCOLATE AVOCADO PLS 15RX10SX14G","s":431,"t":"28CRT, 11RCG","h":18870,"p":"P00008"},{"k":"003","n":"HILO CHOCOLATE BANANA PLS 15RX10SX14G","s":384,"t":"25CRT, 9RCG","h":18870,"p":"P00008"},{"k":"001","n":"HILO CHOCOLATE PLS 15RX10SX14GR","s":1433,"t":"95CRT, 8RCG","h":18870,"p":"P00008"},{"k":"014","n":"HILO CHOCOLATE PLS 15RX10SX14GR ( 10 S FREE 1S)","s":46,"t":"3CRT, 1RCG","h":18870,"p":"P00008"},{"k":"032","n":"HILO ES KETAN HITAM 8RX10SX14GR","s":40,"t":"5CRT","h":18870,"p":"P00008"},{"k":"ESPIS","n":"HILO ES PISANG IJO PLS 8X10SX15 GR","s":0,"t":"","h":16095,"p":"P00008"},{"k":"033","n":"HILO ES TELER PLS 8RX10SX5G","s":0,"t":"","h":16095,"p":"P00008"},{"k":"006","n":"HILO SCHOOL CHOCOLATE CANDY 8RX10SX8G","s":0,"t":"","h":22200,"p":"P00008"},{"k":"002","n":"HILO WHITE CHOCOLATE PLS 15RX10SX14G","s":684,"t":"45CRT, 9RCG","h":18870,"p":"P00008"},{"k":"015","n":"HILO WHITE CHOCOLATE PLS 15RX10SX14GR ( 10 S FREE 1S)","s":123,"t":"8CRT, 3Rcg","h":17760,"p":"P00008"},{"k":"LKP","n":"LOKALATE KOPI PISANG BAKAR EPE PSL 12X10SX15","s":0,"t":"","h":15152,"p":"P00008"},{"k":"009","n":"NS ANGGUR 4PX40SX11 GR","s":262,"t":"16CRT, 6Rtg","h":13320,"p":"P00008"},{"k":"010","n":"NS ANGGUR 4PX40SX11 GR  (10 S FREE 1S)","s":0,"t":"","h":13320,"p":"P00008"},{"k":"007","n":"NS ASO PLS 18X40SX14G","s":58103,"t":"806CRT, 71Rtg","h":13320,"p":"P00008"},{"k":"012","n":"NS ASO PLS 18X40SX14G ( 10 S FREE 1S)","s":2,"t":"2Rtg","h":13320,"p":"P00008"},{"k":"BLG","n":"NS BELIMBING LESS SUGAR 4PKX40SX6 GR","s":28,"t":"1CRT, 12RTG","h":13320,"p":"P00008"},{"k":"018","n":"NS COCOPANDAN 4 PX40X11GR","s":127,"t":"7Crt, 15Rtg","h":13320,"p":"P00008"},{"k":"RUJAK","n":"NS ES RUJAK PLS 4PX40SX13","s":4,"t":"4RTG","h":13320,"p":"P00008"},{"k":"JAHE","n":"NS JERUK NIPIS JAHE PLS 4PX40SX11GR","s":0,"t":"","h":13320,"p":"P00008"},{"k":"JERUK","n":"NS MADU JERUK PLS 4PX40SX11 GR","s":5,"t":"5RTG","h":13320,"p":"P00008"},{"k":"011","n":"NS MADU KURMA PLS 4PX40SX11GR","s":25,"t":"1CRT, 9RTG","h":13320,"p":"P00008"},{"k":"030","n":"NS MANGGA GANDARIA PLS 4PX40SX11GR","s":28,"t":"1CRT, 12RTG","h":13320,"p":"P00008"},{"k":"019","n":"NS MANGO 4PX40SX11 GR  (10 S FREE 1S)","s":0,"t":"","h":13320,"p":"P00008"},{"k":"MARKISA","n":"NS MARKISA PLS 4PX40SX14G","s":17,"t":"1CRT, 1RTG","h":13320,"p":"P00008"},{"k":"013","n":"NS SEMANGKA PLS 4PX40SX11G","s":11,"t":"11RTG","h":13320,"p":"P00008"},{"k":"STRW","n":"NS STRAWBERY PLS 4PX40SX11GR","s":12,"t":"12RTG","h":13320,"p":"P00008"},{"k":"GUAVA","n":"NS SWEET GUAVA PLS 4PX40SX11GR","s":60,"t":"3CRT, 12RTG","h":13320,"p":"P00008"},{"k":"MANGO","n":"NS SWEET MANGO PLS 4PX40SX11GR","s":532,"t":"33CRT, 4RTG","h":13320,"p":"P00008"},{"k":"LEMON","n":"NS TEA LEMON TEA RFL 12 BAGX 500GR","s":3,"t":"3Bag","h":38850,"p":"P00008"},{"k":"WB","n":"NS W DAN BAJIGUR PLS 12X10SX15GR","s":36,"t":"3CRT","h":18870,"p":"P00008"},{"k":"008","n":"NS W DANK EMPON EMPON 12X10X12GR","s":0,"t":"","h":14430,"p":"P00008"},{"k":"WS","n":"NS W DANK SARABA 12R X10S","s":0,"t":"","h":18870,"p":"P00008"},{"k":"021","n":"TS SWT DIABTX PLS 10PX80SX2G","s":0,"t":"","h":44000,"p":""}],"items":[["NS AMERICAN SWEET ORANGE PLS 18PX40SX14G","NUTRISARI",2008.28,1232.07,1323.16,1521.17,3743449590,["007"]],["HI LO DRINK CHOCOLATE PLS 15RX10SX14G","HI LO",56.2,22.54,26.67,35.14,23939528,["001","014"]],["NS SWEET MANGO PLS 4PX40SX11G","NUTRISARI",44.81,31.65,55.81,44.09,23438799,["MANGO"]],["NS ANGGUR PLS 4PX40SX11G","NUTRISARI",39.13,44.26,38.62,40.67,21944121,["009"]],["HI LO DRINK WHITE CHOCOLATE PLS 15RX10SX14G","HI LO",7.2,16.8,12.33,12.11,8005050,["002","015"]],["NS COCOPANDAN PLS 4PX40SX11G","NUTRISARI",17.94,23.8,6.25,16,7832322,["018"]],["HI LO DRINK AVOCADO CHOCOLATE PLS 15RX10SX14G","HI LO",1.4,16.6,9.4,9.13,6661963,["004"]],["HI LO DRINK CHOCOLATE BANANA PLS 15RX10SX14G","HI LO",2.8,8.4,10.8,7.33,5171830,["003"]],["NS MADU JERUK PLS 4PX40SX11G","NUTRISARI",3.63,8.55,16,9.39,4958250,["JERUK"]],["HI LO 3IN1 SUSU COKLAT BELGIA PLS 12RX10SX25G","HI LO",0,17.32,0,5.77,4932901,["005"]],["NS STRAWBERRY PLS 4PX40SX11G","NUTRISARI",7.31,14.21,8.31,9.94,4732196,["STRW"]],["NS SEMANGKA PLS 4PX40SX11G","NUTRISARI",10.44,3.41,15.69,9.85,2873517,["013"]],["NS MANGGA GANDARIA PLS 4PX40SX11G","NUTRISARI",5.5,4.06,9.94,6.5,2228519,["030"]],["NS MARKISA PLS 4PX40SX11G","NUTRISARI",4.44,5.01,10.94,6.8,1668628,["MARKISA"]],["NS SWEET GUAVA PLS 4PX40SX11G","NUTRISARI",7.88,3.83,4.56,5.42,1520229,["GUAVA"]],["TS DIABETAMIL SWT PLS 10PX80SX1G","TS",1,0,3.3,1.43,1333000,["016"]],["NS LESS SUGAR BELIMBING PLS 4PX40SX6G","NUTRISARI",2.63,2.3,1.25,2.06,626506,["BLG"]],["NS ES RUJAK PLS 4PX40SX11G","NUTRISARI",2.44,0.44,3,1.96,428635,["RUJAK"]],["NS W'DANK BAJIGUR PLS 12RX10SX15G","NUTRISARI",0,0,0,0,-17000,["WB"]],["NS W'DANK SARABBA EXTRA PLS 12RX10SX15G","NUTRISARI",0,0,0,0,-17000,["WS"]],["NS LOKALATE KOPI PISANG BAKAR EPE PLS 12RX10SX15G","NUTRISARI",0,0,0,0,-27300,["LKP"]],["NS MADU KURMA PLS 4PX40SX11G","NUTRISARI",4.66,3.03,0.28,2.66,-875582,["011"]]],"bulan":["Jul","Agu","Sep"],"itemFile":"item_sehat_indah_avg_3bln_ctn.xlsx"};
+const SHI_BAWAAN=JSON.stringify(SHI);SHI.sumber="bawaan";
 const S={tab:"data",br:"MAKASSAR",active:true,thr:30,sort:"ap",prun:false,keep:45,add:30,
   label:SNAP.label,src:SNAP.file,mod:SNAP.modified,
   cat:"TRADITIONAL",reg:"SULSEL",open:{},q:"",item:null,qb:"",more:false,rows:SNAP.rows.map(a=>({b:a[0],code:a[1],sku:a[2],brand:a[3],st:a[4],soh:a[5],int:a[6],ap:a[7],cat:"TRADITIONAL",apv:0,sohv:0,mtd:0,mtdv:0}))};
 
 const $=s=>document.querySelector(s);
 const rowsC=cfg=>{const br=(cfg||RG()).br;return S.rows.filter(r=>r.cat===S.cat&&br.includes(r.b))};
-function fixBr(){if(S.tab==="brg"||S.tab==="bsp")return;const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[0]}
+function fixBr(){if(S.tab==="brg"||S.tab==="bsp"||S.tab==="shi")return;const L=S.tab==="doi"?LOWB():BRS();if(!L.includes(S.br))S.br=L[0]}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const f1=n=>n.toLocaleString("id-ID",{maximumFractionDigits:1});
 const f0=n=>Math.round(n).toLocaleString("id-ID");
@@ -432,11 +435,11 @@ function vAncab(){
 }
 
 function paintHead(){
-  $("#stamp").textContent=S.tab==="bsp"?BSP.periode:S.label;
+  $("#stamp").textContent=S.tab==="bsp"?BSP.periode:S.tab==="shi"?SHI.periode:S.label;
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
-  const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item"||S.tab==="brg"||S.tab==="bsp";
-  const sl=document.querySelector('.seg[aria-label="Kanal"]');if(sl)sl.hidden=S.tab==="brg"||S.tab==="bsp";
-  $("#sub").textContent=(S.tab==="bsp"?"Stok BSP Makassar · gudang "+BSP.gudang+" · barang polos":S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":S.tab==="brg"?"Cek per cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
+  const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item"||S.tab==="brg"||S.tab==="bsp"||S.tab==="shi";
+  const sl=document.querySelector('.seg[aria-label="Kanal"]');if(sl)sl.hidden=S.tab==="brg"||S.tab==="bsp"||S.tab==="shi";
+  $("#sub").textContent=(S.tab==="shi"?"Stok Sehat Indah Gorontalo (SHI) · barang Nutrifood":S.tab==="bsp"?"Stok BSP Makassar · gudang "+BSP.gudang+" · barang polos":S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":S.tab==="brg"?"Cek per cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
 }
 const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
 function itemIndex(){
@@ -666,7 +669,86 @@ async function bspPull(manual){
   }catch(e){if(manual){S.bspMsg="Belum ada stok-bsp.json di server, memakai data bawaan.";if(S.tab==="bsp")refresh()}}
 }
 bspPull(false);
-const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem(),brg:()=>vBranch(),bsp:()=>vBsp()};
+/* ===== Tab 7: Stok Sehat Indah (SHI). Stok dari sheet "STOK ..." file ekspor Sehat Indah yang diupload di aplikasi insentif (Fahri) -> insentifData/FahriStok.
+   Stok per item = jumlah karton (CRT) di kolom stk_kms; sisa di bawah karton diabaikan. DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = "Rata2 JUAL/bln" (retur tidak dikurangkan, qty retur sering tidak akurat). */
+const shiCtn=t=>{const m=/(-?\d+)\s*crt\b/i.exec(t||"");return m?+m[1]:0};
+const shiFmt=t=>String(t||"").trim().replace(/(\d)\s*crt/ig,"$1 ctn").toLowerCase();
+const shiRow=k=>SHI.rows.find(r=>r.k===k);
+const shiStok=ks=>ks.reduce((s,k)=>{const r=shiRow(k);return s+(r?shiCtn(r.t):0)},0);
+const shiRaw=ks=>ks.map(k=>{const r=shiRow(k);return r&&r.t?shiFmt(r.t):""}).filter(Boolean).join(" + ");
+const shiIsBn=s=>/BONUS|GIMMICK|GIMIK|GIMMIK|FREE/i.test(s);
+function shiList(){
+  return SHI.items.map(it=>{const stok=shiStok(it[7]),avg=it[5];return {nm:it[0],br:it[1],j:it[2],a:it[3],s:it[4],avg:avg,ks:it[7],stok:stok,doi:avg>0?stok/(avg/30):null}})
+    .sort((x,y)=>S.hs==="ap"?y.avg-x.avg||x.nm.localeCompare(y.nm):(x.doi==null)-(y.doi==null)||(x.doi||0)-(y.doi||0)||x.nm.localeCompare(y.nm));
+}
+function vShi(){
+  const q=(S.qh||"").trim().toLowerCase(),hf=S.hf||"all",hs=S.hs||"doi";
+  const okItem=x=>hf==="all"||(hf==="bn"?false:x.br===(hf==="ns"?"NUTRISARI":"HI LO"));
+  const L=shiList().filter(okItem),list=L.filter(x=>!q||x.nm.toLowerCase().includes(q));
+  const used=new Set(SHI.items.flatMap(i=>i[7])),hit=r=>!q||(r.k+" "+r.n).toLowerCase().includes(q);
+  const bonusStok=hf==="bn"?SHI.rows.filter(r=>!used.has(r.k)&&shiIsBn(r.n)&&hit(r)):[];
+  const other=SHI.rows.filter(r=>!used.has(r.k)&&hit(r)&&!(hf==="bn"&&shiIsBn(r.n)));
+  const chips=[["all","Semua"],["ns","Nutrisari"],["hl","Hilo"],["bn","Bonus"]].map(([k,l])=>`<button type="button" class="bfb" data-hf="${k}" aria-pressed="${hf===k}">${l}</button>`).join("");
+  const sorts=[["doi","Urut: DOI terendah"],["ap","Urut: AP3M tertinggi"]].map(([k,l])=>`<button type="button" class="bfb" data-hs="${k}" aria-pressed="${hs===k}">${l}</button>`).join("");
+  const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0);
+  const cards=list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
+    <span class="rt"><span class="v">${f0(x.stok)}<small>STOK CTN</small></span><span class="d ${doiCls(x.doi)}">${x.doi==null?"–":f0(x.doi)}<small>${x.doi==null?"TANPA SALES":"HARI DOI"}</small></span></span>
+    <span class="sb">AP3M <b>${f1(x.avg)}</b> ctn/bln · ${SHI.bulan.map((m,i)=>m+" "+f0([x.j,x.a,x.s][i])).join(" · ")}${shiRaw(x.ks)?" · stok "+esc(shiRaw(x.ks)):""}${x.ks.length&&!x.ks.some(shiRow)?" · tidak ada di file stok":""}</span></div>`).join("");
+  const rc=r=>`<div class="slim"><span class="nm">${esc(r.n)}</span><span class="rt"><span class="v" style="font-size:12px">${esc(shiFmt(r.t)||(r.s?f0(r.s)+" pcs":"-"))}</span></span><span class="sb">${esc(r.k)}${r.s?" · "+f0(r.s)+" pcs":""}</span></div>`;
+  const sumber=SHI.sumber==="diunggah"?"Diunggah manual":SHI.sumber==="insentif"?"Dari aplikasi insentif (upload Fahri)":"Data bawaan";
+  return `<h2>Stok SHI · DOI</h2>
+  <div class="card stack"><div><div class="lbl">Data stok</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(SHI.sheet||"-")} · ${esc(SHI.file||"-")}</div>
+    <div class="note">Periode ${esc(SHI.periode)} · ${esc(sumber)}${SHI.diperbarui?" · diperbarui "+esc(new Date(SHI.diperbarui).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))+" WITA":""}</div>
+    <div class="note">Penjualan: ${esc(SHI.itemFile||"-")}</div></div>
+    <button class="btn" id="shimuat" type="button">Muat ulang dari insentif</button>
+    <label class="btn ghost" for="shif1" style="text-align:center;display:block">Upload file ekspor Sehat Indah (sheet STOK)</label><input type="file" id="shif1" accept=".xlsx,.xls,.xlsb" hidden>
+    <label class="btn ghost" for="shif2" style="text-align:center;display:block">Upload file item penjualan SHI (.xlsx)</label><input type="file" id="shif2" accept=".xlsx,.xls,.xlsb" hidden>
+    <div id="shimsg" class="note">${esc(S.shiMsg||"")}</div>
+    ${SHI.sumber!=="bawaan"?`<button class="btn ghost" id="shireset" type="button">Kembali ke data bawaan</button>`:""}
+  </div>
+  <div class="card stack"><div class="bfs">${chips}</div><div class="bfs">${sorts}</div><input type="search" id="qh" value="${esc(S.qh||"")}" placeholder="Cari item, mis. aso / chocolate" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
+  <div class="note">${L.length} item · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = rata-rata penjualan 3 bln (retur tidak dikurangkan), sisa di bawah ctn diabaikan</div></div>
+  <div class="slims" style="margin-top:8px">${cards||'<div class="card empty">Tidak ada item yang cocok.</div>'}</div>
+  ${bonusStok.length?`<div class="lbl" style="margin:20px 0 8px">Bonus &amp; gimmick di stok (tanpa DOI)</div><div class="slims">${bonusStok.map(rc).join("")}</div>`:""}
+  ${other.length?`<div class="lbl" style="margin:20px 0 8px">Stok di luar daftar penjualan (tanpa DOI)</div><div class="slims">${other.map(rc).join("")}</div>`:""}
+  <div style="height:24px"></div>`;
+}
+async function shiUpload(kind,f){
+  if(!f)return;const say=t=>{S.shiMsg=t;const el=$("#shimsg");if(el)el.textContent=t};
+  if(typeof XLSX==="undefined"||typeof StokBSP==="undefined"){say("Pembaca Excel belum termuat. Cek koneksi lalu muat ulang halaman.");return}
+  say("Membaca "+f.name+" ...");
+  try{
+    const buf=await f.arrayBuffer(),nb=JSON.parse(JSON.stringify(SHI));
+    if(kind==="stok"){
+      const st=StokBSP.parseShiStok(XLSX,buf,"array");
+      nb.rows=st.rows;nb.sheet=st.sheet;nb.file=f.name;nb.periode=shiPeriode(st.sheet)||nb.periode;nb.diperbarui=null;
+      say("Stok "+st.sheet+" dimuat: "+st.rows.length+" item Nutrifood.");
+    }else{
+      const it=StokBSP.parseItems(XLSX,buf,"array");if(!it.items.length)throw new Error("tidak ada item");
+      const m=StokBSP.mapItems(it.items,nb.rows.map(r=>[r.k,r.n]),nb.items);
+      nb.items=m.items;nb.bulan=it.bulan;nb.itemFile=f.name;
+      say("Item penjualan "+f.name+" dimuat: "+it.items.length+" item"+(m.tanpaKode.length?" · "+m.tanpaKode.length+" item belum ada kode stok: "+m.tanpaKode.slice(0,3).join(", ")+(m.tanpaKode.length>3?" ...":""):"")+".");
+    }
+    nb.sumber="diunggah";SHI=nb;const msg=S.shiMsg;refresh();S.shiMsg=msg;const el=$("#shimsg");if(el)el.textContent=msg;
+  }catch(err){say("Gagal membaca file: "+(err&&err.message?err.message:err))}
+}
+function shiPeriode(sheet){const m=/(\d{1,2})\s*([A-Za-z]{3})\w*\s*(\d{2,4})/.exec(sheet||"");if(!m)return "";const y=+m[3]<100?2000+ +m[3]:+m[3];return (+m[1])+" "+m[2].charAt(0).toUpperCase()+m[2].slice(1).toLowerCase()+" "+y}
+/* Ambil stok terbaru yang disimpan aplikasi insentif saat Fahri upload file Sehat Indah (insentifData/FahriStok) */
+async function shiPull(manual){
+  try{
+    const r=await fetch("https://firestore.googleapis.com/v1/projects/mds-sulawesi/databases/(default)/documents/insentifData/FahriStok?key=AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",{cache:"no-store"});
+    if(r.status===404)throw new Error("belum ada");if(!r.ok)throw new Error(r.status);
+    const f=(await r.json()).fields||{},val=x=>x?(x.stringValue!=null?x.stringValue:x.integerValue!=null?+x.integerValue:x.doubleValue!=null?+x.doubleValue:""):"";
+    const rows=((f.rows||{}).arrayValue||{}).values||[];if(!rows.length)throw new Error("kosong");
+    const nb=JSON.parse(JSON.stringify(SHI));
+    nb.rows=rows.map(v=>{const m=v.mapValue.fields;return {k:val(m.k),n:val(m.n),s:val(m.s)||0,t:val(m.t),h:val(m.h)||0,p:val(m.p)}});
+    nb.sheet=val(f.sheet)||nb.sheet;nb.periode=shiPeriode(nb.sheet)||nb.periode;nb.file="upload Fahri di insentif";nb.diperbarui=f.updatedAt&&f.updatedAt.timestampValue||null;nb.sumber="insentif";
+    SHI=nb;S.shiMsg=manual?"Dimuat dari insentif "+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+".":"";
+    if(S.tab==="shi")refresh();if(manual)toast("Stok SHI dimuat");
+  }catch(e){if(manual){S.shiMsg=(String(e.message)==="belum ada"?"Belum ada stok di insentif (Fahri belum upload file yang berisi sheet STOK)":"Gagal memuat dari insentif")+", memakai data bawaan.";if(S.tab==="shi")refresh()}}
+}
+shiPull(false);
+const VIEWS={data:()=>vData(),doi:()=>vDoi(),ancab:()=>vAncab(),item:()=>vItem(),brg:()=>vBranch(),bsp:()=>vBsp(),shi:()=>vShi()};
 function render(){fixBr();
   paintHead();
   document.body.dataset.tab=S.tab;
@@ -677,7 +759,7 @@ function render(){fixBr();
 function refresh(){fixBr();const y=window.scrollY;paintHead();document.body.dataset.tab=S.tab;$("#view").innerHTML=VIEWS[S.tab]();restoreFocus();window.scrollTo(0,y)}
 /* Search di tab 4 & 5 harus tetap fokus walau kartu di-render ulang */
 function restoreFocus(){
-  const id=S.tab==="brg"?"#qb":(S.tab==="item"?"#q":(S.tab==="bsp"?"#qs":null));if(!id)return;
+  const id=S.tab==="brg"?"#qb":(S.tab==="item"?"#q":(S.tab==="bsp"?"#qs":S.tab==="shi"?"#qh":null));if(!id)return;
   const el=document.querySelector(id);if(!el)return;
   el.focus({preventScroll:true});
   try{el.setSelectionRange(el.value.length,el.value.length)}catch(e){}
@@ -685,7 +767,7 @@ function restoreFocus(){
 
 document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
-  const bfc=e.target.closest(".bfb");if(bfc){if(bfc.dataset.bs)S.bs=bfc.dataset.bs;else S.bf=bfc.dataset.bf;refresh();return}
+  const bfc=e.target.closest(".bfb");if(bfc){if(bfc.dataset.bs)S.bs=bfc.dataset.bs;else if(bfc.dataset.hs)S.hs=bfc.dataset.hs;else if(bfc.dataset.hf)S.hf=bfc.dataset.hf;else S.bf=bfc.dataset.bf;refresh();return}
   const pk=e.target.closest(".pick, button.slim[data-k]");if(pk){S.item=pk.dataset.k;refresh();return}
   const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
@@ -694,6 +776,8 @@ document.addEventListener("click",e=>{
   if(e.target.id==="pull"){e.target.disabled=true;e.target.textContent="Menarik ...";pullLatest(true).finally(()=>{const b=$("#pull");if(b){b.disabled=false;b.textContent="Tarik data terbaru"}});return}
   if(e.target.id==="reset"){location.reload();return}
   if(e.target.id==="bspmuat"){bspPull(true);return}
+  if(e.target.id==="shimuat"){shiPull(true);return}
+  if(e.target.id==="shireset"){S.shiMsg="";SHI=JSON.parse(SHI_BAWAAN);SHI.sumber="bawaan";shiPull(false);refresh();return}
   if(e.target.id==="bspreset"){S.bspMsg="";BSP=JSON.parse(BSP_BAWAAN);BSP.sumber="bawaan";bspPull(false);refresh();return}
   if(e.target.id==="copy"){
     const {moves}=compute();const L=[`Ancab ${BN[S.br]} - ${CN[S.cat]} (data ${S.label})`];
@@ -705,7 +789,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tap")){e.preventDefault();e.target.click()}});
-document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const m=$("#matches");if(m)m.innerHTML=matchesHtml()}else if(e.target.id==="qs"){S.qs=e.target.value;refresh()}else if(e.target.id==="qb"){S.qb=e.target.value;const y=window.scrollY;refresh();window.scrollTo(0,y)}});
+document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const m=$("#matches");if(m)m.innerHTML=matchesHtml()}else if(e.target.id==="qs"){S.qs=e.target.value;refresh()}else if(e.target.id==="qh"){S.qh=e.target.value;refresh()}else if(e.target.id==="qb"){S.qb=e.target.value;const y=window.scrollY;refresh();window.scrollTo(0,y)}});
 document.addEventListener("change",e=>{
   const id=e.target.id;
   if(id==="thr"){S.thr=Math.max(1,+e.target.value||30);refresh()}
@@ -715,6 +799,7 @@ document.addEventListener("change",e=>{
   else if(id==="keep"){S.keep=Math.max(0,+e.target.value||0);refresh()}
   else if(id==="add"){S.add=Math.max(1,+e.target.value||30);refresh()}
   else if(id==="file"){loadFile(e.target.files[0])}
+  else if(id==="shif1"||id==="shif2"){shiUpload(id==="shif1"?"stok":"item",e.target.files[0]);e.target.value=""}
   else if(id==="bspf1"||id==="bspf2"){bspUpload(id==="bspf1"?"stok":"item",e.target.files[0]);e.target.value=""}
 });
 
