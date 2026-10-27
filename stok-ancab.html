@@ -602,10 +602,9 @@ function vBsp(){
   const q=(S.qs||"").trim().toLowerCase();
   const bf=S.bf||"all",isBn=s=>/\b(BONUS|BNS)\b|FREE/i.test(s);
   const okItem=x=>bf==="all"||(bf==="bn"?isBn(x.nm):!isBn(x.nm)&&x.br===(bf==="ns"?"NUTRISARI":"HI LO"));
-  const okRow=r=>bf==="all"||(bf==="bn"?isBn(r[1]):!isBn(r[1])&&(bf==="ns"?/^(NS |N'SARI|NUTRISARI)/i:/^(HILO|HI LO)/i).test(r[1]));
   const L=bspList().filter(okItem),list=L.filter(x=>!q||x.nm.toLowerCase().includes(q));
   const used=new Set(BSP.items.flatMap(i=>i[7]));
-  const other=BSP.rows.filter(r=>!used.has(r[0])&&okRow(r)&&(!q||(r[0]+" "+r[1]).toLowerCase().includes(q)));
+  const other=BSP.rows.filter(r=>!used.has(r[0])&&(!q||(r[0]+" "+r[1]).toLowerCase().includes(q)));
   const chips=[["all","Semua"],["ns","Nutrisari"],["hl","Hilo"],["bn","Bonus"]].map(([k,l])=>`<button type="button" class="bfb" data-bf="${k}" aria-pressed="${bf===k}">${l}</button>`).join("");
   const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0);
   const cards=list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
