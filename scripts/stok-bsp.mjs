@@ -2,7 +2,7 @@
 // Pakai:  node scripts/stok-bsp.mjs <file-stok.xls> [file-item.xlsx]
 //   - file stok  : "Update stok barang polos ... .xls"  (wajib)
 //   - file item  : "item_bsp_polos_avg_3bln_ctn.xlsx"   (opsional; hanya kalau penjualan 3 bulan berubah)
-// Pemetaan item -> kode stok dan gabungan gramasi diambil dari stok-bsp.json yang sudah ada.
+// Pemetaan item -> kode stok dan pasangan gramasi diambil dari stok-bsp.json yang sudah ada.
 // Butuh: npm i xlsx
 import XLSX from "xlsx";
 import fs from "fs";
@@ -29,10 +29,10 @@ if (itemFile) {
   const m = L.mapItems(prev.items.map((i) => i.slice(0, 7)), bsp.rows, prev.items);   // isi kode yang masih kosong bila ada stok baru
   bsp.items = m.items; tanpaKode = m.tanpaKode;
 }
-// gabungan gramasi harus punya item dasar dan anaknya
-for (const g of bsp.gabung || []) {
+// pasangan gramasi (AP3M digabung dengan konversi renceng) harus punya kedua itemnya
+for (const g of bsp.gramasi || []) {
   const nama = new Set(bsp.items.map((i) => i[0]));
-  if (!nama.has(g.base) || g.anak.some((a) => !nama.has(a[0]))) console.warn("PERINGATAN: gabungan gramasi " + g.base + " tidak lengkap di daftar item.");
+  if (!nama.has(g.a) || !nama.has(g.b)) console.warn("PERINGATAN: pasangan gramasi tidak lengkap di daftar item: " + g.a + " / " + g.b);
 }
 fs.writeFileSync(OUT, JSON.stringify(bsp));
 console.log("stok-bsp.json: periode " + bsp.periode + ", " + bsp.rows.length + " baris stok, " + bsp.items.length + " item" + (itemFile ? " (item diperbarui)" : ""));
