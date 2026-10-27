@@ -66,6 +66,10 @@ nav button[aria-selected=true]{color:var(--ink);box-shadow:inset 0 3px 0 var(--r
 firebase.initializeApp({apiKey:"AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",authDomain:"mds-sulawesi.firebaseapp.com",projectId:"mds-sulawesi",storageBucket:"mds-sulawesi.firebasestorage.app",messagingSenderId:"511949021685",appId:"1:511949021685:web:bc32007af0555449e7c0bc"});
 var COL=firebase.firestore().collection('stokGimmickSHI');
 var TX=[];                       // semua transaksi, terbaru dulu
+var NAMA_AWAL=['Abdul','Apin','Adit','Rio','Yayu','Dewi','Yana','Fahri'];
+var NAMA_DB=[];                  // nama tambahan yang tersimpan di database (dokumen tipe 'nama')
+var cap=function(s){return norm(s).toLowerCase().replace(/(^|\s)\S/g,function(c){return c.toUpperCase()})};
+function daftarNama(){var seen={},out=[];NAMA_AWAL.concat(NAMA_DB,TX.map(function(t){return t.pengambil})).forEach(function(n){n=norm(n);if(n&&!seen[key(n)]){seen[key(n)]=1;out.push(n)}});return out;}
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var today=function(){var d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
@@ -86,6 +90,7 @@ function formHtml(tipe){
   return '<div class="card"><label>Tanggal</label><input type="date" id="'+tipe+'-tgl" value="'+today()+'">'+
     '<label>Nama item gimmick</label><input id="'+tipe+'-item" list="dl-item" placeholder="mis. Payung Nutrisari" autocomplete="off">'+
     '<label>Qty (pcs)</label><input id="'+tipe+'-qty" type="number" inputmode="numeric" min="1" step="1" placeholder="0">'+
+    (out?'<label>Diambil oleh</label><select id="out-pic"></select><input id="out-pic-baru" placeholder="Ketik nama baru" style="margin-top:6px" hidden>':'')+
     '<label>Catatan (opsional)</label><input id="'+tipe+'-cat" placeholder="'+(out?'Tujuan / toko / PIC':'Asal / no. dokumen')+'">'+
     '<div id="'+tipe+'-info" class="msg" style="color:var(--muted)"></div>'+
     '<button class="go'+(out?' out':'')+'" id="'+tipe+'-go">'+(out?'Simpan barang keluar':'Simpan barang masuk')+'</button>'+
@@ -104,14 +109,25 @@ function render(){
   $('#v-stok').innerHTML='<div class="kpi"><div><b>'+fmt(tm)+'</b><span>Masuk</span></div><div><b>'+fmt(tk)+'</b><span>Keluar</span></div><div><b>'+fmt(ts)+'</b><span>Sisa</span></div></div>'+
     '<div class="card">'+(keys.length?'<table><thead><tr><th>Item</th><th>Masuk</th><th>Keluar</th><th>Sisa</th></tr></thead><tbody>'+
     keys.map(function(k){var o=s[k],sisa=o.masuk-o.keluar;return '<tr><td>'+esc(o.nama)+'</td><td>'+fmt(o.masuk)+'</td><td>'+fmt(o.keluar)+'</td><td class="sisa'+(sisa<=0?' low':'')+'">'+fmt(sisa)+'</td></tr>'}).join('')+
-    '</tbody></table>':'<div class="empty">Belum ada data. Mulai dari tab Input.</div>')+'</div>';
+    '</tbody></table>':'<div class="empty">Belum ada data. Mulai dari tab Input.</div>')+'</div>'+pengambilHtml();
   // riwayat
   $('#v-riwayat').innerHTML='<div class="card">'+(TX.length?TX.slice(0,200).map(function(t){
-    return '<div class="h"><div><span class="pill '+t.tipe+'">'+(t.tipe==='in'?'MASUK':'KELUAR')+'</span> <b>'+esc(t.item)+'</b><small>'+fmtTgl(t.tanggal)+(t.catatan?' · '+esc(t.catatan):'')+'</small></div>'+
+    return '<div class="h"><div><span class="pill '+t.tipe+'">'+(t.tipe==='in'?'MASUK':'KELUAR')+'</span> <b>'+esc(t.item)+'</b><small>'+fmtTgl(t.tanggal)+(t.tipe==='out'&&t.pengambil?' · diambil '+esc(t.pengambil):'')+(t.catatan?' · '+esc(t.catatan):'')+'</small></div>'+
       '<div style="text-align:right"><b>'+(t.tipe==='in'?'+':'−')+fmt(t.qty)+' pcs</b><br><button class="del" data-id="'+esc(t.id)+'" aria-label="Hapus">×</button></div></div>';}).join(''):'<div class="empty">Belum ada transaksi.</div>')+'</div>';
+  fillPic();
   ['in','out'].forEach(showInfo);
 }
+function fillPic(){
+  var sel=$('#out-pic');if(!sel)return;var cur=sel.value;
+  sel.innerHTML='<option value="">Pilih nama pengambil</option>'+daftarNama().map(function(n){return '<option>'+esc(n)+'</option>'}).join('')+'<option value="__baru">➕ Tambah nama baru...</option>';
+  if(cur&&Array.prototype.some.call(sel.options,function(o){return o.value===cur}))sel.value=cur;
+}
 
+function pengambilHtml(){
+  var m={};TX.forEach(function(t){if(t.tipe!=='out')return;var n=norm(t.pengambil)||'(tanpa nama)',k=key(n);var o=m[k]||(m[k]={nama:n,qty:0,n:0});o.qty+=t.qty;o.n++;});
+  var ks=Object.keys(m).sort(function(a,b){return m[b].qty-m[a].qty});if(!ks.length)return '';
+  return '<div class="card"><label>Barang keluar per pengambil</label><table><thead><tr><th>Nama</th><th>Kali</th><th>Total pcs</th></tr></thead><tbody>'+ks.map(function(k){return '<tr><td>'+esc(m[k].nama)+'</td><td>'+m[k].n+'</td><td class="sisa">'+fmt(m[k].qty)+'</td></tr>'}).join('')+'</tbody></table></div>';
+}
 function showInfo(tipe){
   var el=$('#'+tipe+'-info'),it=$('#'+tipe+'-item');if(!el||!it)return;
   var o=saldo()[key(it.value)];
@@ -121,6 +137,7 @@ function showInfo(tipe){
 function bindForm(tipe){
   $('#'+tipe+'-item').addEventListener('input',function(){showInfo(tipe)});
   $('#'+tipe+'-go').addEventListener('click',function(){save(tipe)});
+  if(tipe==='out')$('#out-pic').addEventListener('change',function(){var b=$('#out-pic-baru');b.hidden=this.value!=='__baru';if(!b.hidden)b.focus();});
 }
 
 function save(tipe){
@@ -130,6 +147,12 @@ function save(tipe){
   if(!item)return err('Nama item wajib diisi.');
   if(!(qty>=1))return err('Qty harus angka 1 atau lebih.');
   if(!tgl)return err('Tanggal wajib diisi.');
+  var pic='';
+  if(tipe==='out'){
+    var v=$('#out-pic').value;pic=v==='__baru'?cap($('#out-pic-baru').value):v;
+    if(!pic)return err('Pilih atau isi nama pengambil.');
+    var sama=daftarNama().filter(function(n){return key(n)===key(pic)})[0];if(sama)pic=sama;
+  }
   if(tipe==='out'){
     var o=saldo()[key(item)],sisa=o?o.masuk-o.keluar:0;
     if(qty>sisa&&!confirm('Qty keluar ('+fmt(qty)+') lebih besar dari sisa ('+fmt(sisa)+' pcs). Tetap simpan?'))return;
@@ -137,9 +160,14 @@ function save(tipe){
   // samakan penulisan dengan item yang sudah ada (huruf besar/kecil)
   var ada=saldo()[key(item)];if(ada)item=ada.nama;
   btn.disabled=true;msg.className='msg';msg.textContent='Menyimpan...';
-  COL.add({tipe:tipe,item:item,qty:qty,tanggal:tgl,catatan:cat,ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+  var baru=tipe==='out'&&!daftarNama().some(function(n){return key(n)===key(pic)});
+  var rec={tipe:tipe,item:item,qty:qty,tanggal:tgl,catatan:cat,ts:firebase.firestore.FieldValue.serverTimestamp()};
+  if(tipe==='out')rec.pengambil=pic;
+  var tulis=COL.add(rec);
+  if(baru)tulis=tulis.then(function(){return COL.add({tipe:'nama',nama:pic,ts:firebase.firestore.FieldValue.serverTimestamp()})});   // nama baru ikut tersimpan di database
+  tulis.then(function(){
     msg.className='msg ok';msg.textContent='Tersimpan: '+item+' '+(tipe==='in'?'+':'−')+fmt(qty)+' pcs';
-    $('#'+tipe+'-qty').value='';$('#'+tipe+'-cat').value='';btn.disabled=false;
+    $('#'+tipe+'-qty').value='';$('#'+tipe+'-cat').value='';if(tipe==='out'){$('#out-pic-baru').value='';$('#out-pic-baru').hidden=true;$('#out-pic').value=''}btn.disabled=false;
   }).catch(function(e){err('Gagal menyimpan: '+(e.code||'')+' '+e.message);btn.disabled=false;});
 }
 
@@ -154,7 +182,8 @@ document.addEventListener('click',function(e){
 
 render();
 COL.onSnapshot(function(snap){
-  TX=snap.docs.map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
+  NAMA_DB=snap.docs.map(function(d){return d.data()}).filter(function(x){return x.tipe==='nama'&&x.nama}).map(function(x){return x.nama});
+  TX=snap.docs.filter(function(d){return d.data().tipe!=='nama'}).map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',pengambil:x.pengambil||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
     .sort(function(a,b){return b.tanggal<a.tanggal?-1:b.tanggal>a.tanggal?1:b.ts-a.ts});
   render();
 },function(e){document.querySelector('.wrap').insertAdjacentHTML('beforeend','<div class="card msg err">Gagal memuat data: '+esc(e.code||'')+' '+esc(e.message)+'</div>')});
