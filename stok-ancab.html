@@ -189,6 +189,10 @@ nav.tabs{background:rgba(20,28,37,.96);border:1px solid rgba(255,255,255,.12)}
 button.slim{cursor:pointer;min-height:0}
 button.slim:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .slim.on{border-left-color:var(--rack);background:var(--bg)}
+.slim.wrap .sb{white-space:normal;overflow:visible;line-height:1.35;padding-top:2px}
+.slim.wrap .nm{white-space:normal;overflow:visible}
+.slim.tap{cursor:pointer}
+.slimadv{margin:-2px 0 2px;padding:8px 10px;background:var(--surface);border:1px solid #DDE1E7;border-left:3px solid var(--rack);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px}
 .slim .nm{font:700 12.5px/1.2 var(--f-body);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slim .sb{grid-column:1;font:500 10px/1.2 var(--f-mono);color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slim .sb b{color:var(--ink);font-weight:600}
@@ -409,12 +413,10 @@ function vDoi(){
   const {moves,unmet}=compute();
   const chips=LOWB().map(b=>`<button class="chip" data-br="${b}" aria-pressed="${b===S.br}">${BN[b]}<span class="n">${lowItems(b).length}</span></button>`).join("");
   const cards=l.map(r=>{const d=doi(r);const out=r.soh<=0.05;const k=r.code+"|"+r.sku;const op=!!S.open[k];
-    return `<div class="card item tap" data-k="${esc(k)}" role="button" tabindex="0" aria-expanded="${op}"><div class="top"><div style="min-width:0"><div class="name">${esc(r.sku)}</div><div class="brand">${esc(r.brand)}${r.st!=="AKTIF"?` · ${esc(r.st)}`:""}</div></div>
-      <div class="doi ${sev(d)}">${out?"0":f0(d)}<small>HARI DOI</small></div></div>
-      ${meter(d)}
-      <div class="facts"><span>SOH <b>${f1(r.soh)}</b> ctn</span><span>AP3M <b>${fRp(r.apv)}</b>/bln</span><span><b>${f1(r.ap)}</b> ctn/bln</span></div>
-      <div class="row">${out?'<span class="pill crit">Stok habis</span>':""}${intPill(r.int)}<span class="pill" style="margin-left:auto">Saran Ancab ${op?"▴":"▾"}</span></div>
-      ${op?`<div class="adv">${advice(r,moves,unmet)}</div>`:""}</div>`}).join("");
+    return `<div class="slim wrap tap" data-k="${esc(k)}" role="button" tabindex="0" aria-expanded="${op}"><span class="nm">${esc(r.sku)}</span>
+      <span class="rt"><span class="v">${f1(r.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(d)}">${out?"0":f0(d)}<small>HARI DOI</small></span></span>
+      <span class="sb">${out?"<b>stok habis</b> · ":""}AP3M <b>${fRp(r.apv)}</b>/bln · <b>${f1(r.ap)}</b> ctn/bln · ${esc(r.brand)}${r.st!=="AKTIF"?" · "+esc(r.st):""} · ${r.int>0?"intransit "+f0(r.int)+" ctn":"tanpa intransit"}${r.gnote?" · "+esc(r.gnote):""} · Saran Ancab ${op?"▴":"▾"}</span></div>
+      ${op?`<div class="slimadv">${advice(r,moves,unmet)}</div>`:""}`}).join("");
   return `
   <h2>Item DOI rendah</h2>
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
@@ -423,8 +425,8 @@ function vDoi(){
     <select id="sort" aria-label="Urutkan"><option value="ap" ${S.sort==="ap"?"selected":""}>AP3M tertinggi (Rp)</option><option value="doi" ${S.sort==="doi"?"selected":""}>DOI terendah</option></select>
     <label class="row note" style="gap:6px"><input type="checkbox" id="act" ${S.active?"checked":""}> Hanya aktif</label>
   </div>
-  <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Garis hitam pada bar menandai 30 hari. Ketuk item untuk melihat saran Ancab.</div>
-  <div class="stack">${cards||'<div class="card empty">Tidak ada item di bawah batas ini.</div>'}</div>`;
+  <div class="note" style="margin-bottom:10px">${l.length} item di ${BN[S.br]}. Ketuk item untuk melihat saran Ancab.</div>
+  <div class="slims">${cards||'<div class="card empty">Tidak ada item di bawah batas ini.</div>'}</div>`;
 }
 
 function vAncab(){
@@ -433,26 +435,24 @@ function vAncab(){
   const sum=a=>a.reduce((s,x)=>s+x.q,0);
   const chips=BRS().map(b=>`<button class="chip" data-br="${b}" aria-pressed="${b===S.br}">${BN[b]}<span class="n">${moves.filter(m=>m.to===b||m.from===b).length}</span></button>`).join("");
   const card=(m,dir)=>{
-    const other=dir==="in"?m.from:m.to;
-    const intNote=m.rInt>0?`<span class="pill warn">Penerima ada intransit ${f0(m.rInt)} ctn</span>`:`<span class="pill muted">Penerima tanpa intransit</span>`;
-    const sNote=m.sAp>0?`<span>Pengirim DOI <b>${f0(m.sBefore)}→${f0(m.sAfter)}</b></span>`:`<span>Pengirim tanpa penjualan</span>`;
-    return `<div class="card item"><div class="move"><div class="qty">${f0(m.q)}<small>CTN</small></div>
-      <div style="min-width:0"><div class="name">${esc(m.sku)}</div>
-      <div class="route">≈ <b>${fRp(m.v)}</b> · stok penerima ${f1(m.rSoh)} ctn</div></div></div>
-      <div class="facts"><span>Penerima DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b></span>${sNote}</div>
-      <div class="row">${intNote}${m.sInt>0?`<span class="pill muted">Pengirim ada intransit ${f0(m.sInt)}</span>`:""}</div></div>`};
+    const intT=m.rInt>0?"penerima ada intransit "+f0(m.rInt)+" ctn":"penerima tanpa intransit";
+    const sT=m.sAp>0?`pengirim DOI <b>${f0(m.sBefore)}→${f0(m.sAfter)}</b>`:"pengirim tanpa penjualan";
+    return `<div class="slim wrap"><span class="nm">${esc(m.sku)}</span>
+      <span class="rt"><span class="v">${f0(m.q)}<small>CTN</small></span><span class="v" style="min-width:58px">${fRp(m.v)}<small>NILAI</small></span></span>
+      <span class="sb">penerima DOI <b>${f0(m.rBefore)}→${f0(m.rAfter)}</b> · ${sT} · stok penerima ${f1(m.rSoh)} ctn · ${intT}${m.sInt>0?" · pengirim ada intransit "+f0(m.sInt)+" ctn":""}</span></div>`};
   const grp=(list,key,dir)=>BRS().filter(b=>list.some(m=>m[key]===b)).map(b=>{const g=list.filter(m=>m[key]===b).sort((x,y)=>(y.v-x.v)||(y.q-x.q));
-    return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><span class="lbl" style="font-size:15px;color:var(--ink)">ANCAB ${dir==="in"?"DARI":"KE"} ${BN[b].toUpperCase()}</span><span class="pill">${g.length} item · ${f0(g.reduce((s,x)=>s+x.q,0))} ctn · ${fRp(g.reduce((s,x)=>s+x.v,0))}</span></div><div class="stack">${g.map(m=>card(m,dir)).join("")}</div>`}).join("");
+    return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><span class="lbl" style="font-size:15px;color:var(--ink)">ANCAB ${dir==="in"?"DARI":"KE"} ${BN[b].toUpperCase()}</span><span class="pill">${g.length} item · ${f0(g.reduce((s,x)=>s+x.q,0))} ctn · ${fRp(g.reduce((s,x)=>s+x.v,0))}</span></div><div class="slims">${g.map(m=>card(m,dir)).join("")}</div>`}).join("");
   const um=unmet.filter(u=>u.b===S.br).sort((a,c)=>(c.apv-a.apv)||(c.ap-a.ap));
-  const umHtml=um.map(u=>`<div class="card item"><div class="top"><div style="min-width:0"><div class="name">${esc(u.sku)}</div><div class="brand">${esc(u.why)}</div></div><div class="doi ${sev(u.d)}">${u.soh<=0.05?"0":f0(u.d)}<small>HARI DOI</small></div></div>
-    <div class="row">${intPill(u.int)}<span class="facts"><span>AP3M <b>${fRp(u.apv)}</b>/bln</span><span><b>${f1(u.ap)}</b> ctn/bln</span></span></div></div>`).join("");
+  const umHtml=um.map(u=>`<div class="slim wrap"><span class="nm">${esc(u.sku)}</span>
+    <span class="rt"><span class="v">${f1(u.soh)}<small>SOH CTN</small></span><span class="d ${doiCls(u.d)}">${u.soh<=0.05?"0":f0(u.d)}<small>HARI DOI</small></span></span>
+    <span class="sb">${esc(u.why)} · AP3M <b>${fRp(u.apv)}</b>/bln · <b>${f1(u.ap)}</b> ctn/bln · ${u.int>0?"intransit "+f0(u.int)+" ctn":"tanpa intransit"}</span></div>`).join("");
   return `
   <h2>Saran Ancab</h2>
   <div class="chips" role="group" aria-label="Cabang">${chips}</div>
   <div class="card" style="margin-block:12px"><div class="grid2">
     <div class="stat"><span class="v">${f0(sum(inn))}</span><span class="k">ctn diterima · ${inn.length} item · ≈ ${fRp(inn.reduce((s,x)=>s+x.v,0))}</span></div>
     <div class="stat"><span class="v">${f0(sum(out))}</span><span class="k">ctn dikirim · ${out.length} item · ≈ ${fRp(out.reduce((s,x)=>s+x.v,0))}</span></div></div>
-    <p class="note" style="margin:10px 0 0">${RG().rule} Pengirim tetap punya minimal <b>${S.keep}</b> hari, penerima ditambah maksimal <b>${S.add}</b> hari. Intransit tidak dihitung sebagai stok. Tab <b>Cek item</b> menghitung semua item (termasuk item bonus), jadi angkanya bisa berbeda dari tab ini.</p>
+    <details style="margin-top:8px"><summary class="note" style="cursor:pointer">Aturan Ancab (ketuk untuk membuka)</summary><p class="note" style="margin:6px 0 0">${RG().rule} Pengirim tetap punya minimal <b>${S.keep}</b> hari, penerima ditambah maksimal <b>${S.add}</b> hari. Intransit tidak dihitung sebagai stok. Tab <b>Cek item</b> menghitung semua item (termasuk item bonus), jadi angkanya bisa berbeda dari tab ini.</p></details>
     <div class="row" style="margin-top:10px">
       <label class="note" for="keep">Sisa pengirim</label><input type="number" id="keep" value="${S.keep}" min="0" max="120" inputmode="numeric">
       <label class="note" for="add">Tambah</label><input type="number" id="add" value="${S.add}" min="1" max="120" inputmode="numeric"><span class="note">hari</span>
@@ -461,7 +461,7 @@ function vAncab(){
   ${grp(out,"to","out")}
   ${!inn.length&&!out.length?'<div class="card empty">Tidak ada Ancab untuk cabang ini.</div>':""}
   ${(inn.length||out.length)?`<button class="btn ghost" id="copy" style="margin-top:14px;width:100%">Salin ringkasan untuk WhatsApp</button>`:""}
-  ${um.length?`<div class="lbl" style="margin:20px 0 8px">Belum tertutup Ancab</div><div class="stack">${umHtml}</div>`:""}`;
+  ${um.length?`<div class="lbl" style="margin:20px 0 8px">Belum tertutup Ancab</div><div class="slims">${umHtml}</div>`:""}`;
 }
 
 function paintHead(){
@@ -799,7 +799,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest(".tab");if(t){S.tab=t.dataset.tab;render();return}
   const bfc=e.target.closest(".bfb");if(bfc){if(bfc.dataset.bs)S.bs=bfc.dataset.bs;else if(bfc.dataset.hs)S.hs=bfc.dataset.hs;else if(bfc.dataset.hf)S.hf=bfc.dataset.hf;else S.bf=bfc.dataset.bf;refresh();return}
   const pk=e.target.closest(".pick, button.slim[data-k]");if(pk){S.item=pk.dataset.k;refresh();return}
-  const tp=e.target.closest(".item.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
+  const tp=e.target.closest(".item.tap, .slim.tap");if(tp&&!e.target.closest("a,button,input,select")){const k=tp.dataset.k;S.open[k]=!S.open[k];refresh();return}
   const sg=e.target.closest(".segb");if(sg){if(sg.dataset.reg)S.reg=sg.dataset.reg;else S.cat=sg.dataset.cat;refresh();return}
   const c=e.target.closest(".chip");if(c){S.br=c.dataset.br;S.more=false;refresh();return}
   if(e.target.id==="moreb"){S.more=true;refresh();return}
