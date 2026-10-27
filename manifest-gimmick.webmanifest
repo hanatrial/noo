@@ -1,0 +1,15 @@
+{
+  "name": "Stok Gimmick Sehat Indah",
+  "short_name": "Gimmick SHI",
+  "description": "Catat barang gimmick masuk dan keluar (pcs), stok, dan pengambil",
+  "start_url": "./stok-gimmick.html",
+  "scope": "./stok-gimmick.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F6F8",
+  "theme_color": "#1E2025",
+  "icons": [
+    { "src": "gimmick-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "gimmick-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

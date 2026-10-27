@@ -6,6 +6,12 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#1E2025">
 <title>Stok Gimmick Sehat Indah</title>
+<link rel="manifest" href="manifest-gimmick.webmanifest">
+<link rel="icon" href="gimmick-192.png">
+<link rel="apple-touch-icon" href="gimmick-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gimmick SHI">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
@@ -49,6 +55,10 @@ nav button[aria-selected=true]{color:var(--ink);box-shadow:inset 0 3px 0 var(--r
 <body>
 <div class="wrap">
 <header><h1>Stok Gimmick</h1><div class="sub">Sehat Indah · barang masuk, keluar, dan sisa (pcs)</div></header>
+<div class="card" id="pasang" hidden>
+  <b>Pasang di HP</b><div class="msg" id="pasang-info" style="color:var(--muted)">Pasang sekali, lalu buka dari ikon di layar utama.</div>
+  <button class="go" id="pasang-btn" type="button" hidden style="margin-top:10px">Pasang aplikasi</button>
+</div>
 
 <section id="v-in" class="view"></section>
 <section id="v-out" class="view" hidden></section>
@@ -179,6 +189,20 @@ document.addEventListener('click',function(e){
   if(b){document.querySelectorAll('nav button').forEach(function(x){x.setAttribute('aria-selected',x===b)});
     document.querySelectorAll('.view').forEach(function(v){v.hidden=v.id!=='v-'+b.dataset.v});window.scrollTo(0,0);}
 });
+
+/* Pasang di HP (PWA): tombol di Android/Chrome, petunjuk di iPhone dan browser lain. Sembunyi kalau sudah dibuka dari ikon. */
+(function(){
+  var box=$('#pasang'),btn=$('#pasang-btn'),info=$('#pasang-info');
+  var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw-gimmick.js',{scope:'./stok-gimmick.html'}).catch(function(){});
+  if(standalone)return;
+  var ios=/iphone|ipad|ipod/i.test(navigator.userAgent),evt=null;
+  box.hidden=false;
+  info.textContent=ios?'Di iPhone: buka lewat Safari, tekan tombol Bagikan (kotak dengan panah), lalu pilih "Tambah ke Layar Utama".':'Di Android: buka menu ⋮ di Chrome lalu pilih "Instal aplikasi" atau "Tambahkan ke layar utama".';
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();evt=e;btn.hidden=false;info.textContent='Pasang sekali, lalu buka dari ikon di layar utama.'});
+  btn.addEventListener('click',function(){if(!evt)return;evt.prompt();Promise.resolve(evt.userChoice).catch(function(){}).then(function(){evt=null;btn.hidden=true})});
+  window.addEventListener('appinstalled',function(){box.hidden=true});
+})();
 
 render();
 COL.onSnapshot(function(snap){
