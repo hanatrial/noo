@@ -44,6 +44,8 @@ td.sisa{font-weight:800}td.low{color:var(--crit)}
 .h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
 .h:last-child{border:0}.h small{color:var(--muted);display:block}
 .h .del{background:none;color:var(--muted);padding:2px 8px;font-size:18px;font-weight:400}
+.h.done{background:var(--ok-soft);margin:0 -14px;padding-left:14px;padding-right:14px}
+.ck{width:auto;flex:none;margin:2px 10px 0 0;accent-color:var(--ok);width:22px;height:22px;cursor:pointer}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
 nav button{flex:1;background:none;border-radius:0;padding:14px 4px;font-size:13px;color:var(--muted)}
 nav button[aria-selected=true]{color:var(--ink);box-shadow:inset 0 3px 0 var(--rack)}
@@ -122,7 +124,8 @@ function render(){
     '</tbody></table>':'<div class="empty">Belum ada data. Mulai dari tab Input.</div>')+'</div>'+pengambilHtml();
   // riwayat
   $('#v-riwayat').innerHTML='<div class="card">'+(TX.length?TX.slice(0,200).map(function(t){
-    return '<div class="h"><div><span class="pill '+t.tipe+'">'+(t.tipe==='in'?'MASUK':'KELUAR')+'</span> <b>'+esc(t.item)+'</b><small>'+fmtTgl(t.tanggal)+(t.tipe==='out'&&t.pengambil?' · diambil '+esc(t.pengambil):'')+(t.catatan?' · '+esc(t.catatan):'')+'</small></div>'+
+    var out=t.tipe==='out';
+    return '<div class="h'+(out&&t.diambil?' done':'')+'">'+(out?'<input type="checkbox" class="ck" data-id="'+esc(t.id)+'" aria-label="Sudah diambil"'+(t.diambil?' checked':'')+'>':'')+'<div style="flex:1"><span class="pill '+t.tipe+'">'+(t.tipe==='in'?'MASUK':'KELUAR')+'</span> <b>'+esc(t.item)+'</b><small>'+fmtTgl(t.tanggal)+(t.tipe==='out'&&t.pengambil?' · diambil '+esc(t.pengambil):'')+(t.catatan?' · '+esc(t.catatan):'')+'</small></div>'+
       '<div style="text-align:right"><b>'+(t.tipe==='in'?'+':'−')+fmt(t.qty)+' pcs</b><br><button class="del" data-id="'+esc(t.id)+'" aria-label="Hapus">×</button></div></div>';}).join(''):'<div class="empty">Belum ada transaksi.</div>')+'</div>';
   fillPic();
   ['in','out'].forEach(showInfo);
@@ -181,6 +184,10 @@ function save(tipe){
   }).catch(function(e){err('Gagal menyimpan: '+(e.code||'')+' '+e.message);btn.disabled=false;});
 }
 
+document.addEventListener('change',function(e){      // centang = barang keluar sudah diambil (hanya tampilan, tidak mengubah stok)
+  var c=e.target;if(!c.classList||!c.classList.contains('ck'))return;
+  COL.doc(c.dataset.id).update({diambil:c.checked}).catch(function(er){c.checked=!c.checked;alert('Gagal menyimpan centang: '+er.message)});
+});
 document.addEventListener('click',function(e){
   var d=e.target.closest&&e.target.closest('.del');
   if(d){var t=TX.filter(function(x){return x.id===d.dataset.id})[0];
@@ -207,7 +214,7 @@ document.addEventListener('click',function(e){
 render();
 COL.onSnapshot(function(snap){
   NAMA_DB=snap.docs.map(function(d){return d.data()}).filter(function(x){return x.tipe==='nama'&&x.nama}).map(function(x){return x.nama});
-  TX=snap.docs.filter(function(d){return d.data().tipe!=='nama'}).map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',pengambil:x.pengambil||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
+  TX=snap.docs.filter(function(d){return d.data().tipe!=='nama'}).map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',pengambil:x.pengambil||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',diambil:x.diambil===true,ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
     .sort(function(a,b){return b.tanggal<a.tanggal?-1:b.tanggal>a.tanggal?1:b.ts-a.ts});
   render();
 },function(e){document.querySelector('.wrap').insertAdjacentHTML('beforeend','<div class="card msg err">Gagal memuat data: '+esc(e.code||'')+' '+esc(e.message)+'</div>')});
