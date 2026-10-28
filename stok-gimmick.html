@@ -121,8 +121,8 @@ function render(){
   var tm=0,tk=0,ts=0;
   keys.forEach(function(k){tm+=s[k].masuk;tk+=s[k].keluar;ts+=s[k].masuk-s[k].keluar;});
   $('#v-stok').innerHTML='<div class="kpi"><div><b>'+fmt(tm)+'</b><span>Masuk</span></div><div><b>'+fmt(tk)+'</b><span>Keluar</span></div><div><b>'+fmt(ts)+'</b><span>Sisa</span></div></div>'+
-    '<div class="card">'+(keys.length?'<table><thead><tr><th>Item</th><th>Masuk</th><th>Keluar</th><th class="sisa">Sisa</th></tr></thead><tbody>'+
-    keys.map(function(k){var o=s[k],sisa=o.masuk-o.keluar;return '<tr><td>'+esc(o.nama)+'</td><td>'+fmt(o.masuk)+'</td><td>'+fmt(o.keluar)+'</td><td class="sisa'+(sisa<=0?' low':'')+'">'+fmt(sisa)+'</td></tr>'}).join('')+
+    '<div class="card">'+(keys.length?'<table><thead><tr><th>Item</th><th class="sisa">Sisa</th><th>Masuk</th><th>Keluar</th></tr></thead><tbody>'+
+    keys.map(function(k){var o=s[k],sisa=o.masuk-o.keluar;return '<tr><td>'+esc(o.nama)+'</td><td class="sisa'+(sisa<=0?' low':'')+'">'+fmt(sisa)+'</td><td>'+fmt(o.masuk)+'</td><td>'+fmt(o.keluar)+'</td></tr>'}).join('')+
     '</tbody></table>':'<div class="empty">Belum ada data. Mulai dari tab Input.</div>')+'</div>'+pengambilHtml();
   // riwayat
   $('#v-riwayat').innerHTML='<div class="card">'+(TX.length?TX.slice(0,200).map(function(t){
