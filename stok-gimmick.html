@@ -79,6 +79,7 @@ firebase.initializeApp({apiKey:"AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",authDom
 var COL=firebase.firestore().collection('stokGimmickSHI');
 var TX=[];                       // semua transaksi, terbaru dulu
 var NAMA_AWAL=['Abdul','Apin','Adit','Rio','Yayu','Dewi','Yana','Fahri'];
+var AMBIL={};                   // {idTransaksiKeluar:[idDokumenCentang]} transaksi keluar yang sudah diambil
 var NAMA_DB=[];                  // nama tambahan yang tersimpan di database (dokumen tipe 'nama')
 var cap=function(s){return norm(s).toLowerCase().replace(/(^|\s)\S/g,function(c){return c.toUpperCase()})};
 function daftarNama(){var seen={},out=[];NAMA_AWAL.concat(NAMA_DB,TX.map(function(t){return t.pengambil})).forEach(function(n){n=norm(n);if(n&&!seen[key(n)]){seen[key(n)]=1;out.push(n)}});return out;}
@@ -184,14 +185,16 @@ function save(tipe){
   }).catch(function(e){err('Gagal menyimpan: '+(e.code||'')+' '+e.message);btn.disabled=false;});
 }
 
-document.addEventListener('change',function(e){      // centang = barang keluar sudah diambil (hanya tampilan, tidak mengubah stok)
+document.addEventListener('change',function(e){      // centang = barang keluar sudah diambil (hanya tampilan, tidak mengubah stok); disimpan sebagai dokumen tipe 'ambil' (tambah/hapus saja, tanpa update)
   var c=e.target;if(!c.classList||!c.classList.contains('ck'))return;
-  COL.doc(c.dataset.id).update({diambil:c.checked}).catch(function(er){c.checked=!c.checked;alert('Gagal menyimpan centang: '+er.message)});
+  var id=c.dataset.id,undo=function(er){c.checked=!c.checked;alert('Gagal menyimpan centang: '+er.message)};
+  if(c.checked)COL.add({tipe:'ambil',ref:id,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(undo);
+  else (AMBIL[id]||[]).forEach(function(d){COL.doc(d).delete().catch(undo)});
 });
 document.addEventListener('click',function(e){
   var d=e.target.closest&&e.target.closest('.del');
   if(d){var t=TX.filter(function(x){return x.id===d.dataset.id})[0];
-    if(t&&confirm('Hapus transaksi ini?\n'+(t.tipe==='in'?'Masuk ':'Keluar ')+t.item+' '+fmt(t.qty)+' pcs ('+fmtTgl(t.tanggal)+')'))COL.doc(t.id).delete().catch(function(er){alert('Gagal menghapus: '+er.message)});}
+    if(t&&confirm('Hapus transaksi ini?\n'+(t.tipe==='in'?'Masuk ':'Keluar ')+t.item+' '+fmt(t.qty)+' pcs ('+fmtTgl(t.tanggal)+')')){(AMBIL[t.id]||[]).forEach(function(d){COL.doc(d).delete()});COL.doc(t.id).delete().catch(function(er){alert('Gagal menghapus: '+er.message)});}}
   var b=e.target.closest&&e.target.closest('nav button');
   if(b){document.querySelectorAll('nav button').forEach(function(x){x.setAttribute('aria-selected',x===b)});
     document.querySelectorAll('.view').forEach(function(v){v.hidden=v.id!=='v-'+b.dataset.v});window.scrollTo(0,0);}
@@ -214,7 +217,8 @@ document.addEventListener('click',function(e){
 render();
 COL.onSnapshot(function(snap){
   NAMA_DB=snap.docs.map(function(d){return d.data()}).filter(function(x){return x.tipe==='nama'&&x.nama}).map(function(x){return x.nama});
-  TX=snap.docs.filter(function(d){return d.data().tipe!=='nama'}).map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',pengambil:x.pengambil||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',diambil:x.diambil===true,ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
+  AMBIL={};snap.docs.forEach(function(d){var x=d.data();if(x.tipe==='ambil'&&x.ref)(AMBIL[x.ref]=AMBIL[x.ref]||[]).push(d.id)});
+  TX=snap.docs.filter(function(d){var t=d.data().tipe;return t!=='nama'&&t!=='ambil'}).map(function(d){var x=d.data();return {id:d.id,tipe:x.tipe==='out'?'out':'in',item:x.item||'',pengambil:x.pengambil||'',qty:Number(x.qty)||0,tanggal:x.tanggal||today(),catatan:x.catatan||'',diambil:!!AMBIL[d.id],ts:x.ts&&x.ts.toMillis?x.ts.toMillis():Date.now()}})
     .sort(function(a,b){return b.tanggal<a.tanggal?-1:b.tanggal>a.tanggal?1:b.ts-a.ts});
   render();
 },function(e){document.querySelector('.wrap').insertAdjacentHTML('beforeend','<div class="card msg err">Gagal memuat data: '+esc(e.code||'')+' '+esc(e.message)+'</div>')});
