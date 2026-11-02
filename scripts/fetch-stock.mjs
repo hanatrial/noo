@@ -21,7 +21,7 @@ if (process.env.FORCE !== "true") {
   } catch (e) { /* belum ada data, lanjut */ }
 }
 
-const TOKEN = "wSaQw8zZ6MPPy29";
+const TOKEN = "oycnq9DgY93MGRJ";
 const BASE = `https://bench.borwita.co.id/public.php/dav/files/${TOKEN}/`;
 const headers = { Authorization: "Basic " + Buffer.from(TOKEN + ":").toString("base64") };
 
