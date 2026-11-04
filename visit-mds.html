@@ -30,25 +30,19 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;
 .tabs{display:flex;gap:6px;margin-top:8px}
 .tabs button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;min-height:44px;font-size:14px}
 .tabs button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-details{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-top:12px}
-summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px}
-summary::-webkit-details-marker{display:none}
-summary b{font-size:15px}summary small{color:var(--muted);display:block;font-size:12px}
-.chip{font-size:12px;border-radius:999px;padding:3px 9px;background:var(--bg);white-space:nowrap}
-.chip.ok{background:var(--ok-soft);color:var(--ok)}
-.rute{margin:0 14px 8px;display:flex}
-.rute a{font-size:13px;color:var(--rack);text-decoration:none;font-weight:600;min-height:44px;display:flex;align-items:center}
-.toko{border-top:1px solid var(--line);padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 10px}
+#list{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.toko{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-top:1px solid var(--line)}
+.toko:first-child{border-top:0}
 .toko.done{background:var(--ok-soft)}
-.toko .n{font-weight:600;overflow-wrap:anywhere}
-.toko .s{font-size:13px;color:var(--muted);grid-column:1/3}
+.cek{display:flex;gap:2px;flex:none}
+.cek label{width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cek input{width:26px;height:26px;margin:0;accent-color:var(--ok);cursor:pointer}
+.info{flex:1;min-width:0;padding-top:8px}
+.n{display:block;font-weight:600;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.n:hover{text-decoration:underline}
+.s{font-size:13px;color:var(--muted);margin-top:2px}
 .tag{display:inline-block;font-size:11px;border-radius:4px;padding:1px 6px;margin-right:4px;background:var(--bg);color:var(--muted);vertical-align:1px}
 .tag.t{background:var(--warn-soft);color:var(--warn)}
-.act{display:flex;gap:6px;grid-column:1/3}
-.act a,.act button{flex:1;text-align:center;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);border-radius:8px;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:14px}
-.act .v{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
-.act .v:disabled{background:var(--ok);border-color:var(--ok);color:#fff;cursor:default}
-.act .v.wait:disabled{background:var(--bg);color:var(--muted);border-color:var(--line)}
 .kosong{text-align:center;color:var(--muted);padding:40px 0}
 </style>
 </head>
@@ -85,7 +79,7 @@ const now=new Date(),pad=n=>String(n).padStart(2,'0');
 const bulan=`${now.getFullYear()}-${pad(now.getMonth()+1)}`,hari=`${bulan}-${pad(now.getDate())}`;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const stores=D.map(r=>({id:r[3].toFixed(5)+','+r[4].toFixed(5)+'|'+r[0],n:r[0],sc:r[1],sb:r[2],lat:r[3],lon:r[4],m:r[5],t:r[6],g:r[7]}));
+const stores=D.map(r=>({id:r[3].toFixed(5)+','+r[4].toFixed(5)+'|'+r[0],n:r[0],sc:r[1],sb:r[2],lat:r[3],lon:r[4],m:r[5],t:r[6]}));
 const need=s=>s.t?2:1;
 const done=s=>(S.log[s.id]||[]).filter(d=>d.startsWith(bulan)).length;
 let filter='belum',q='';
@@ -101,48 +95,36 @@ $('daftar').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;S.mds=
 $('ganti').onclick=()=>{if(confirm('Ganti nama MDS? Catatan visit tetap tersimpan.')){S.mds=null;save();render()}};
 $('q').oninput=e=>{q=e.target.value.trim().toLowerCase();draw()};
 $('tabs').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;filter=b.dataset.f;[...$('tabs').children].forEach(x=>x.setAttribute('aria-pressed',x===b));draw()};
-$('list').onclick=e=>{
-  const b=e.target.closest('[data-a]');if(!b)return;
-  const s=stores.find(x=>x.id===b.dataset.id);if(!s)return;
+$('list').onchange=e=>{ // centang = tambah visit hari ini, hapus centang = batalkan visit terakhir bulan ini
+  const c=e.target.closest('input[data-id]');if(!c)return;
+  const s=stores.find(x=>x.id===c.dataset.id);if(!s)return;
   const arr=S.log[s.id]=S.log[s.id]||[];
-  if(b.dataset.a==='v'&&done(s)<need(s)&&!arr.includes(hari))arr.push(hari);
-  if(b.dataset.a==='u'){for(let i=arr.length-1;i>=0;i--)if(arr[i].startsWith(bulan)){arr.splice(i,1);break}}
-  save();draw(new Set([...document.querySelectorAll('details[open]')].map(d=>d.dataset.g)));
+  if(c.checked){if(done(s)<need(s))arr.push(hari)}
+  else for(let i=arr.length-1;i>=0;i--)if(arr[i].startsWith(bulan)){arr.splice(i,1);break}
+  save();draw();
 };
 
-function ordered(list){ // tetangga terdekat, mulai dari toko paling utara
+function ordered(list){ // tetangga terdekat, mulai dari toko paling utara, supaya toko berdekatan berurutan
   const r=[],L=list.slice().sort((a,b)=>b.lat-a.lat);let c=L.shift();
   while(c){r.push(c);let bi=-1,bd=1e9;L.forEach((x,i)=>{const d=(x.lat-c.lat)**2+(x.lon-c.lon)**2;if(d<bd){bd=d;bi=i}});c=bi<0?null:L.splice(bi,1)[0]}
   return r;
 }
-function draw(open){
-  const mine=stores.filter(s=>s.m===S.mds);
+function draw(){
+  const mine=ordered(stores.filter(s=>s.m===S.mds));
   const tot=mine.reduce((a,s)=>a+need(s),0),dn=mine.reduce((a,s)=>a+Math.min(done(s),need(s)),0);
   $('pb').style.width=(tot?dn/tot*100:0)+'%';
   $('s1').textContent=`${dn} dari ${tot} visit bulan ini`;
   $('s2').textContent=`${mine.filter(s=>done(s)>=need(s)).length} dari ${mine.length} toko selesai`;
-  const gs={};mine.forEach(s=>(gs[s.g]=gs[s.g]||[]).push(s));
-  let html='';
-  Object.keys(gs).map(Number).sort((a,b)=>a-b).forEach(g=>{
-    const all=ordered(gs[g]);
-    const gt=all.reduce((a,s)=>a+need(s),0),gd=all.reduce((a,s)=>a+Math.min(done(s),need(s)),0);
-    const vis=all.filter(s=>{
-      const ok=done(s)>=need(s);
-      if(filter==='belum'&&ok)return false;if(filter==='selesai'&&!ok)return false;
-      return !q||(s.n+' '+s.sc+' '+s.sb).toLowerCase().includes(q)});
-    if(!vis.length)return;
-    const isOpen=open?open.has(String(g)):(q||filter!=='belum'?true:gd<gt);
-    const rute=all.length>1?`https://www.google.com/maps/dir/${all.map(s=>s.lat+','+s.lon).join('/')}`:null;
-    html+=`<details data-g="${g}" ${isOpen?'open':''}><summary><div><b>Grup ${g}</b><small>${all.length} toko berdekatan</small></div><span class="chip ${gd>=gt?'ok':''}">${gd}/${gt} visit</span></summary>`+
-      (rute?`<div class="rute"><a href="${rute}" target="_blank" rel="noopener">Rute semua toko di grup ini</a></div>`:'')+
-      vis.map(s=>{const d=done(s),n=need(s),ok=d>=n,hi=!ok&&(S.log[s.id]||[]).includes(hari);
-        return `<div class="toko ${ok?'done':''}"><div class="n">${esc(s.n)}</div><span class="chip ${ok?'ok':''}">${d}/${n}</span>
-        <div class="s"><span class="tag ${s.t?'t':''}">${s.t?'Target · 2x/bulan':'1x/bulan'}</span>${sales(s)}</div>
-        <div class="act"><a href="${maps(s)}" target="_blank" rel="noopener">Google Maps</a>
-        ${d>0?`<button data-a="u" data-id="${esc(s.id)}">Batal</button>`:''}
-        <button class="v ${hi?'wait':''}" data-a="v" data-id="${esc(s.id)}" ${ok||hi?'disabled':''}>${ok?'Selesai':hi?'Visit ke-'+(d+1)+' lain hari':(n>1&&d>0?'Visit ke-'+(d+1):'Sudah visit')}</button></div></div>`}).join('')+`</details>`;
-  });
-  $('list').innerHTML=html||'<p class="kosong">Tidak ada toko di tampilan ini.</p>';
+  const vis=mine.filter(s=>{
+    const ok=done(s)>=need(s);
+    if(filter==='belum'&&ok)return false;if(filter==='selesai'&&!ok)return false;
+    return !q||(s.n+' '+s.sc+' '+s.sb).toLowerCase().includes(q)});
+  $('list').innerHTML=vis.length?vis.map(s=>{
+    const d=done(s),n=need(s);
+    const boxes=Array.from({length:n},(_,i)=>`<label><input type="checkbox" data-id="${esc(s.id)}" ${d>i?'checked':''} aria-label="Visit ke-${i+1} ${esc(s.n)}"></label>`).join('');
+    return `<div class="toko ${d>=n?'done':''}"><div class="cek">${boxes}</div><div class="info"><a class="n" href="${maps(s)}" target="_blank" rel="noopener">${esc(s.n)}</a>
+    <div class="s"><span class="tag ${s.t?'t':''}">${s.t?'Target · 2x/bulan':'1x/bulan'}</span>${sales(s)}</div></div></div>`}).join('')
+    :'<p class="kosong">Tidak ada toko di tampilan ini.</p>';
 }
 function render(){
   if(!S.mds||!stores.some(s=>s.m===S.mds)){pilih();return}
