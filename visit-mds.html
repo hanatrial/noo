@@ -41,7 +41,9 @@ header{position:sticky;top:0;z-index:5;background:var(--head);color:var(--head-i
 .cek label{width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cek input{width:26px;height:26px;margin:0;accent-color:var(--ok);cursor:pointer}
 .info{flex:1;min-width:0;padding-top:8px}
-.n{display:block;font-weight:600;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.nm{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+.area{font-size:11px;font-weight:500;border:1px solid var(--ok);color:var(--ok);border-radius:4px;padding:0 6px;white-space:nowrap}
+.n{display:inline;font-weight:600;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
 .n:hover{text-decoration:underline}
 .s{font-size:13px;color:var(--muted);margin-top:2px}
 .tag{display:inline-block;font-size:11px;border-radius:4px;padding:1px 6px;margin-right:4px;background:var(--bg);color:var(--muted);vertical-align:1px}
@@ -100,7 +102,7 @@ const now=new Date(),pad=n=>String(n).padStart(2,'0');
 const bulan=`${now.getFullYear()}-${pad(now.getMonth()+1)}`,hari=`${bulan}-${pad(now.getDate())}`;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const stores=D.map(r=>({id:r[3].toFixed(5)+','+r[4].toFixed(5)+'|'+r[0],n:r[0],sc:r[1],sb:r[2],lat:r[3],lon:r[4],m:r[5],t:r[6]}));
+const stores=D.map(r=>({id:r[3].toFixed(5)+','+r[4].toFixed(5)+'|'+r[0],n:r[0],sc:r[1],sb:r[2],lat:r[3],lon:r[4],m:r[5],t:r[6],g:r[7]}));
 const need=s=>s.t?2:1;
 const done=s=>(S.log[s.id]||[]).filter(d=>d.startsWith(bulan)).length;
 let filter='belum',q='';
@@ -131,7 +133,9 @@ function ordered(list){ // tetangga terdekat, mulai dari toko paling utara, supa
   return r;
 }
 function draw(){
-  const mine=ordered(stores.filter(s=>s.m===S.mds));
+  const gs={};stores.filter(s=>s.m===S.mds).forEach(s=>(gs[s.g]=gs[s.g]||[]).push(s));
+  let na=0;const area={}; // area hanya untuk kelompok toko berdekatan (>1 toko), diberi nomor berurutan
+  const mine=Object.keys(gs).map(Number).sort((x,y)=>x-y).flatMap(g=>{if(gs[g].length>1)area[g]=++na;return ordered(gs[g])});
   const tot=mine.reduce((a,s)=>a+need(s),0),dn=mine.reduce((a,s)=>a+Math.min(done(s),need(s)),0);
   $('pb').style.width=(tot?dn/tot*100:0)+'%';
   $('s1').textContent=`${dn} dari ${tot} visit bulan ini`;
@@ -143,7 +147,7 @@ function draw(){
   $('list').innerHTML=vis.length?vis.map(s=>{
     const d=done(s),n=need(s);
     const boxes=Array.from({length:n},(_,i)=>`<label><input type="checkbox" data-id="${esc(s.id)}" ${d>i?'checked':''} aria-label="Visit ke-${i+1} ${esc(s.n)}"></label>`).join('');
-    return `<div class="toko ${d>=n?'done':''}"><div class="info"><a class="n" href="${maps(s)}" target="_blank" rel="noopener">${esc(s.n)}</a>
+    return `<div class="toko ${d>=n?'done':''}"><div class="info"><div class="nm"><a class="n" href="${maps(s)}" target="_blank" rel="noopener">${esc(s.n)}</a>${area[s.g]?`<span class="area">Area ${area[s.g]}</span>`:""}</div>
     <div class="s"><span class="tag ${s.t?'t':''}">${s.t?'Target · 2x/bulan':'1x/bulan'}</span>${sales(s)}</div></div><div class="cek">${boxes}</div></div>`}).join('')
     :'<p class="kosong">Tidak ada toko di tampilan ini.</p>';
 }
