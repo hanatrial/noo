@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <title>Visit Toko MDS</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root{--bg:#F5F6F8;--surface:#fff;--ink:#16181D;--muted:#6B7078;--line:#E3E6EB;--accent:#1E2025;--accent-ink:#fff;--rack:#C2410C;--ok:#1F7A4D;--ok-soft:#E3F6EC;--warn-soft:#FFF1D6;--warn:#8A5300;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#121316;--surface:#1B1D22;--ink:#EDEEF0;--muted:#9AA0A9;--line:#2B2E35;--accent:#EDEEF0;--accent-ink:#121316;--rack:#FF8A5C;--ok:#53C58B;--ok-soft:#173326;--warn-soft:#3A2D12;--warn:#F2B552;color-scheme:dark}}
@@ -75,6 +77,24 @@ const KEY='visit-mds-v1';
 let S={mds:null,log:{}};
 try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')S={mds:x.mds||null,log:x.log||{}}}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+// Firestore (project mds-sulawesi), koleksi visit_mds: satu dokumen per toko {mds, nama, dates[]}
+let COL=null;
+try{if(window.firebase){firebase.initializeApp({apiKey:"AIzaSyCA8Q8athqYIsY3By5wPxcU97GjDBR6DAs",authDomain:"mds-sulawesi.firebaseapp.com",projectId:"mds-sulawesi",storageBucket:"mds-sulawesi.firebasestorage.app",messagingSenderId:"511949021685",appId:"1:511949021685:web:bc32007af0555449e7c0bc"});COL=firebase.firestore().collection('visit_mds')}}catch(e){}
+const docId=id=>id.replace(/[^A-Za-z0-9.\-]/g,'_');
+let P=new Set();try{P=new Set(JSON.parse(localStorage.getItem(KEY+'-p')||'[]'))}catch(e){}
+const saveP=()=>{try{localStorage.setItem(KEY+'-p',JSON.stringify([...P]))}catch(e){}};
+function sync(){ // toko yang berubah dikirim ke Firestore; yang gagal (offline) dicoba lagi saat halaman dibuka
+  if(!COL)return;
+  P.forEach(id=>{const s=stores.find(x=>x.id===id);if(!s){P.delete(id);saveP();return}
+    COL.doc(docId(id)).set({mds:S.mds,nama:s.n,dates:S.log[id]||[],ts:firebase.firestore.FieldValue.serverTimestamp()}).then(()=>{P.delete(id);saveP()}).catch(()=>{})});
+}
+function pull(){ // pulihkan catatan dari Firestore (mis. ganti HP), kecuali toko yang belum terkirim
+  if(!COL||!S.mds)return;
+  COL.where('mds','==',S.mds).get().then(sn=>{
+    sn.forEach(d=>{const x=d.data(),s=stores.find(t=>docId(t.id)===d.id);if(s&&!P.has(s.id)&&Array.isArray(x.dates))S.log[s.id]=x.dates});
+    save();draw();
+  }).catch(()=>{});
+}
 const now=new Date(),pad=n=>String(n).padStart(2,'0');
 const bulan=`${now.getFullYear()}-${pad(now.getMonth()+1)}`,hari=`${bulan}-${pad(now.getDate())}`;
 const $=id=>document.getElementById(id);
@@ -101,7 +121,7 @@ $('list').onchange=e=>{ // centang = tambah visit hari ini, hapus centang = bata
   const arr=S.log[s.id]=S.log[s.id]||[];
   if(c.checked){if(done(s)<need(s))arr.push(hari)}
   else for(let i=arr.length-1;i>=0;i--)if(arr[i].startsWith(bulan)){arr.splice(i,1);break}
-  save();draw();
+  save();P.add(s.id);saveP();sync();draw();
 };
 
 function ordered(list){ // tetangga terdekat, mulai dari toko paling utara, supaya toko berdekatan berurutan
@@ -130,7 +150,7 @@ function render(){
   if(!S.mds||!stores.some(s=>s.m===S.mds)){pilih();return}
   $('pilih').hidden=true;$('app').hidden=false;
   $('nm').textContent=S.mds;$('bln').textContent=`${BLN[now.getMonth()]} ${now.getFullYear()}`;
-  draw();
+  draw();sync();pull();
 }
 render();
 </script>
