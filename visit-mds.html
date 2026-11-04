@@ -7,31 +7,32 @@
 <title>Visit Toko MDS</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F5F6F8;--surface:#fff;--ink:#16181D;--muted:#6B7078;--line:#E3E6EB;--accent:#1E2025;--accent-ink:#fff;--rack:#C2410C;--ok:#1F7A4D;--ok-soft:#E3F6EC;--warn-soft:#FFF1D6;--warn:#8A5300;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#121316;--surface:#1B1D22;--ink:#EDEEF0;--muted:#9AA0A9;--line:#2B2E35;--accent:#EDEEF0;--accent-ink:#121316;--rack:#FF8A5C;--ok:#53C58B;--ok-soft:#173326;--warn-soft:#3A2D12;--warn:#F2B552;color-scheme:dark}}
+:root{--bg:#DAF1DE;--surface:#fff;--ink:#051F20;--muted:#47695C;--line:#B6D9BF;--accent:#163832;--accent-ink:#DAF1DE;--head:#0B2B26;--head-ink:#DAF1DE;--head-muted:#8EB69B;--lime:#B5D334;--ok:#235347;--ok-soft:#E9F6EC;--warn-soft:#B5D334;--warn:#051F20;--bad:#9B1C1C;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#051F20;--surface:#0B2B26;--ink:#DAF1DE;--muted:#8EB69B;--line:#235347;--accent:#B5D334;--accent-ink:#051F20;--head:#0B2B26;--head-ink:#DAF1DE;--head-muted:#8EB69B;--ok:#B5D334;--ok-soft:#163832;--bad:#FF9E8F;color-scheme:dark}}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Poppins,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px;-webkit-text-size-adjust:100%}
 .wrap{max-width:640px;margin:0 auto}
-button,input{font:inherit;color:inherit}
+button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;min-height:44px}
+.btn{border:1px solid #235347;background:transparent;color:var(--head-ink);border-radius:8px;padding:10px 14px;min-height:44px}
 #pilih{padding-top:48px}
 #pilih h1{font-size:22px;margin:0 0 4px}
 #pilih p{color:var(--muted);margin:0 0 20px}
-#pilih .btn{display:block;width:100%;text-align:left;margin-bottom:8px;font-weight:600}
+#pilih .btn{background:var(--surface);color:var(--ink);border-color:var(--line);display:block;width:100%;text-align:left;margin-bottom:8px;font-weight:600}
 #pilih small{display:block;font-weight:400;color:var(--muted)}
-header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:5;background:var(--head);color:var(--head-ink);padding:12px 14px 12px;border-radius:0 0 12px 12px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.top b{font-size:17px}.top span{color:var(--muted);font-size:13px;display:block}
-.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:10px 0 4px}
-.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .2s}
-.sum{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.top b{font-size:17px}.top span{color:var(--head-muted);font-size:13px;display:block}
+.bar{height:8px;background:#235347;border-radius:4px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;background:var(--lime,#B5D334);width:0;transition:width .2s}
+.sum{display:flex;justify-content:space-between;font-size:13px;color:var(--head-muted)}
 .tools{display:flex;gap:8px;margin-top:10px}
 .tools input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:0 12px;min-height:44px}
 .tabs{display:flex;gap:6px;margin-top:8px}
-.tabs button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;min-height:44px;font-size:14px}
-.tabs button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tabs button{flex:1;border:1px solid #235347;background:transparent;color:var(--head-ink);border-radius:8px;min-height:44px;font-size:14px}
+.tabs button[aria-pressed=true]{background:#B5D334;color:#051F20;border-color:#B5D334;font-weight:600}
 #list{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .toko{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-top:1px solid var(--line)}
 .toko:first-child{border-top:0}
