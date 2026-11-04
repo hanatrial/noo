@@ -143,8 +143,8 @@ function draw(){
   $('list').innerHTML=vis.length?vis.map(s=>{
     const d=done(s),n=need(s);
     const boxes=Array.from({length:n},(_,i)=>`<label><input type="checkbox" data-id="${esc(s.id)}" ${d>i?'checked':''} aria-label="Visit ke-${i+1} ${esc(s.n)}"></label>`).join('');
-    return `<div class="toko ${d>=n?'done':''}"><div class="cek">${boxes}</div><div class="info"><a class="n" href="${maps(s)}" target="_blank" rel="noopener">${esc(s.n)}</a>
-    <div class="s"><span class="tag ${s.t?'t':''}">${s.t?'Target · 2x/bulan':'1x/bulan'}</span>${sales(s)}</div></div></div>`}).join('')
+    return `<div class="toko ${d>=n?'done':''}"><div class="info"><a class="n" href="${maps(s)}" target="_blank" rel="noopener">${esc(s.n)}</a>
+    <div class="s"><span class="tag ${s.t?'t':''}">${s.t?'Target · 2x/bulan':'1x/bulan'}</span>${sales(s)}</div></div><div class="cek">${boxes}</div></div>`}).join('')
     :'<p class="kosong">Tidak ada toko di tampilan ini.</p>';
 }
 function render(){
