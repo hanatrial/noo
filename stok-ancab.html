@@ -653,7 +653,7 @@ function vBsp(){
   const oc=other.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const sumber=BSP.sumber==="diunggah"?"Diunggah manual":BSP.sumber==="server"?"Dari server (stok-bsp.json)":"Data bawaan";
   const note=npMode
-    ?(np?`${npList.length}${q?" dari "+np.rows.length:""} item non polos · stok <b>${f0(totNp)} ctn</b> · ${esc(np.file||"-")} · periode ${esc(np.periode||"-")} · tanpa DOI`:`Belum ada data stok non polos. Ikut terisi dari email atau unggahan file "update stok barang colour".`)
+    ?(np?`${npList.length}${q?" dari "+np.rows.length:""} item non polos · stok <b>${f0(totNp)} ctn</b> · ${esc(np.file||"-")} · periode ${esc(np.periode||"-")} · tanpa DOI`:`Belum ada data stok non polos. Ikut terisi dari email atau unggahan file "update stok barang colour / color".`)
     :`${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = rata-rata penjualan 3 bln, sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar`;
   return `<h2>${npMode?"Stok BSP · Non polos":"Stok BSP · DOI"}</h2>
   <div class="card stack"><div><div class="lbl">Data stok</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(BSP.file||"-")}</div>
@@ -663,7 +663,7 @@ function vBsp(){
     <button class="btn" id="bspmuat" type="button">Muat ulang dari server</button>
     <label class="btn ghost" for="bspf1" style="text-align:center;display:block">Upload file stok polos (.xls / .xlsx)</label><input type="file" id="bspf1" accept=".xls,.xlsx,.xlsb" hidden>
     <label class="btn ghost" for="bspf2" style="text-align:center;display:block">Upload file item penjualan (.xlsx)</label><input type="file" id="bspf2" accept=".xls,.xlsx,.xlsb" hidden>
-    <label class="btn ghost" for="bspf3" style="text-align:center;display:block">Upload file stok non polos / colour (.xls)</label><input type="file" id="bspf3" accept=".xls,.xlsx,.xlsb" hidden>
+    <label class="btn ghost" for="bspf3" style="text-align:center;display:block">Upload file stok non polos (colour / color) (.xls)</label><input type="file" id="bspf3" accept=".xls,.xlsx,.xlsb" hidden>
     <div id="bspmsg" class="note">${esc(S.bspMsg||"")}</div>
     ${BSP.sumber==="diunggah"?`<button class="btn ghost" id="bspreset" type="button">Kembali ke data server / bawaan</button>`:""}
   </div>
