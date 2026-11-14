@@ -1,7 +1,9 @@
-// Ubah file stok BSP (dan opsional file item penjualan) jadi stok-bsp.json, dipakai tab 6 "Stok BSP" di stok-ancab.html
-// Pakai:  node scripts/stok-bsp.mjs <file-stok.xls> [file-item.xlsx]
+// Ubah file stok BSP (dan opsional file item penjualan / file stok non polos) jadi stok-bsp.json,
+// dipakai tab 6 "Stok BSP" di stok-ancab.html
+// Pakai:  node scripts/stok-bsp.mjs <file-stok.xls> [file-item.xlsx] [--nonpolos file-colour.xls]
 //   - file stok  : "Update stok barang polos ... .xls"  (wajib)
 //   - file item  : "item_bsp_polos_avg_3bln_ctn.xlsx"   (opsional; hanya kalau penjualan 3 bulan berubah)
+//   - --nonpolos : "Update stok barang colour ... .xls" (opsional; stok non polos, tanpa DOI)
 // Pemetaan item -> kode stok dan gabungan gramasi diambil dari stok-bsp.json yang sudah ada.
 // Butuh: npm i xlsx
 import XLSX from "xlsx";
@@ -11,14 +13,26 @@ import { createRequire } from "module";
 
 const L = createRequire(import.meta.url)("../stok-bsp-lib.js");
 const OUT = new URL("../stok-bsp.json", import.meta.url);
-const [, , stokFile, itemFile] = process.argv;
-if (!stokFile) { console.error("Pakai: node scripts/stok-bsp.mjs <file-stok.xls> [file-item.xlsx]"); process.exit(1); }
+const pos = [];
+let npFile = "";
+for (let i = 2; i < process.argv.length; i++) {
+  const a = process.argv[i];
+  if (a === "--nonpolos" || a === "--non-polos") npFile = process.argv[++i] || "";
+  else pos.push(a);
+}
+const [stokFile, itemFile] = pos;
+if (!stokFile) { console.error("Pakai: node scripts/stok-bsp.mjs <file-stok.xls> [file-item.xlsx] [--nonpolos file-colour.xls]"); process.exit(1); }
 
 const prev = JSON.parse(fs.readFileSync(OUT, "utf8"));
 const st = L.parseStok(XLSX, fs.readFileSync(stokFile), "buffer");
 if (st.rows.length < 5) { console.error("Hanya " + st.rows.length + " baris stok terbaca, file tidak dipakai (mungkin bukan file stok barang polos)."); process.exit(1); }
 
 const bsp = { ...prev, periode: st.periode || prev.periode, gudang: st.gudang || prev.gudang, file: path.basename(stokFile), rows: st.rows, diperbarui: new Date().toISOString() };
+if (npFile) {
+  const np = L.parseStok(XLSX, fs.readFileSync(npFile), "buffer");
+  if (np.rows.length < 5) { console.error("Hanya " + np.rows.length + " baris stok non polos terbaca, file tidak dipakai (mungkin bukan file stok barang colour)."); process.exit(1); }
+  bsp.nonPolos = { periode: np.periode || "", gudang: np.gudang || bsp.gudang, file: path.basename(npFile), rows: np.rows, diperbarui: new Date().toISOString() };
+}
 let tanpaKode = [];
 if (itemFile) {
   const it = L.parseItems(XLSX, fs.readFileSync(itemFile), "buffer");
@@ -35,5 +49,5 @@ for (const g of bsp.gabung || []) {
   if (!nama.has(g.base) || g.anak.some((a) => !nama.has(a[0]))) console.warn("PERINGATAN: gabungan gramasi " + g.base + " tidak lengkap di daftar item.");
 }
 fs.writeFileSync(OUT, JSON.stringify(bsp));
-console.log("stok-bsp.json: periode " + bsp.periode + ", " + bsp.rows.length + " baris stok, " + bsp.items.length + " item" + (itemFile ? " (item diperbarui)" : ""));
+console.log("stok-bsp.json: periode " + bsp.periode + ", " + bsp.rows.length + " baris stok, " + bsp.items.length + " item" + (itemFile ? " (item diperbarui)" : "") + (npFile ? ", non polos " + bsp.nonPolos.rows.length + " baris (" + bsp.nonPolos.file + ")" : ""));
 if (tanpaKode.length) console.log("Item tanpa kode stok (dianggap stok 0): " + tanpaKode.join("; "));

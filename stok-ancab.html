@@ -469,7 +469,7 @@ function paintHead(){
   document.querySelectorAll(".segb").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat?b.dataset.cat===S.cat:b.dataset.reg===S.reg));
   const wl=document.querySelector('.seg[aria-label="Wilayah"]');if(wl)wl.hidden=S.tab==="item"||S.tab==="brg"||S.tab==="bsp"||S.tab==="shi";
   const sl=document.querySelector('.seg[aria-label="Kanal"]');if(sl)sl.hidden=S.tab==="brg"||S.tab==="bsp"||S.tab==="shi";
-  $("#sub").textContent=(S.tab==="shi"?"Stok Sehat Indah Gorontalo (SHI) · barang Nutrifood":S.tab==="bsp"?"Stok BSP Makassar · gudang "+BSP.gudang+" · barang polos":S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":S.tab==="brg"?"Cek per cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
+  $("#sub").textContent=(S.tab==="shi"?"Stok Sehat Indah Gorontalo (SHI) · barang Nutrifood":S.tab==="bsp"?"Stok BSP Makassar · gudang "+BSP.gudang+(BSP.nonPolos?" · polos + non polos":" · barang polos"):S.tab==="item"?"Sulawesi, semua cabang · semua item (semua kategori termasuk #PBD)":S.tab==="brg"?"Cek per cabang · semua item (semua kategori termasuk #PBD)":CN[S.cat]+" · "+BRS().map(b=>BN[b]).join(" · "));
 }
 const doiCls=d=>d==null?"na":d<15?"crit":d<30?"warn":"ok";
 function itemIndex(){
@@ -635,34 +635,41 @@ function bspList(){
 }
 function vBsp(){
   const q=(S.qs||"").trim().toLowerCase();
-  const bf=S.bf||"all",isBn=s=>/\b(BONUS|BNS)\b|FREE/i.test(s);
+  const bf=S.bf||"all",npMode=bf==="np",isBn=s=>/\b(BONUS|BNS)\b|FREE/i.test(s);
   const okItem=x=>bf==="all"||(bf==="bn"?isBn(x.nm):!isBn(x.nm)&&x.br===(bf==="ns"?"NUTRISARI":"HI LO"));
-  const L=bspList().filter(okItem),list=L.filter(x=>!q||x.nm.toLowerCase().includes(q));
-  const used=new Set(BSP.items.flatMap(i=>i[7]));
-  const isX=r=>/^NFI-X[13]-/.test(r[0]),hit=r=>!q||(r[0]+" "+r[1]).toLowerCase().includes(q);
-  const bonusStok=bf==="bn"?BSP.rows.filter(r=>isX(r)&&hit(r)):[];   // filter Bonus: ikut tampil stok berkode NFI-X1 / NFI-X3 (tanpa DOI)
-  const other=BSP.rows.filter(r=>!used.has(r[0])&&hit(r)&&!(bf==="bn"&&isX(r)));
-  const chips=[["all","Semua"],["ns","Nutrisari"],["hl","Hilo"],["bn","Bonus"]].map(([k,l])=>`<button type="button" class="bfb" data-bf="${k}" aria-pressed="${bf===k}">${l}</button>`).join("");
-  const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0);
-  const cards=list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
+  const L=bspList().filter(x=>!npMode&&okItem(x)),list=L.filter(x=>!q||x.nm.toLowerCase().includes(q));
+  const used=new Set(BSP.items.flatMap(i=>i[7])),hit=r=>!q||(r[0]+" "+r[1]).toLowerCase().includes(q),isX=r=>/^NFI-X[13]-/.test(r[0]);
+  const np=BSP.nonPolos||null,npList=npMode&&np?np.rows.filter(hit).sort((a,b)=>a[1].localeCompare(b[1])):[];
+  const bonusStok=!npMode&&bf==="bn"?BSP.rows.filter(r=>isX(r)&&hit(r)):[];   // filter Bonus: ikut tampil stok berkode NFI-X1 / NFI-X3 (tanpa DOI)
+  const other=npMode?[]:BSP.rows.filter(r=>!used.has(r[0])&&hit(r)&&!(bf==="bn"&&isX(r)));
+  const chips=[["all","Semua"],["ns","Nutrisari"],["hl","Hilo"],["bn","Bonus"],["np","Non polos"]].map(([k,l])=>`<button type="button" class="bfb" data-bf="${k}" aria-pressed="${bf===k}">${l}</button>`).join("");
+  const nCrit=L.filter(x=>x.doi!=null&&x.doi<15).length,nWarn=L.filter(x=>x.doi!=null&&x.doi>=15&&x.doi<30).length,tot=L.reduce((s,x)=>s+x.stok,0),totNp=npList.reduce((s,r)=>s+bspCtn(r[9]),0);
+  const cards=npMode
+    ?npList.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}<small>STOK</small></span></span><span class="sb">${esc(r[0])}</span></div>`).join("")
+    :list.map(x=>`<div class="slim"><span class="nm">${esc(x.nm)}</span>
     <span class="rt"><span class="v">${x.gb?f1(x.stok):f0(x.stok)}<small>STOK CTN</small></span><span class="d ${doiCls(x.doi)}">${x.doi==null?"–":f0(x.doi)}<small>${x.doi==null?"TANPA SALES":"HARI DOI"}</small></span></span>
     <span class="sb">AP3M <b>${f1(x.avg)}</b> ctn/bln · ${BSP.bulan.map((m,i)=>m+" "+f0([x.j,x.a,x.s][i])).join(" · ")}${x.note}${bspRaw(x.ks)?" · stok "+esc(bspRaw(x.ks)):""}${x.ks.length?"":" · tidak ada di file stok"}</span></div>`).join("");
   const bc=bonusStok.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const oc=other.map(r=>`<div class="slim"><span class="nm">${esc(r[1])}</span><span class="rt"><span class="v" style="font-size:12px">${esc(bspFmt(r[9])||"-")}</span></span><span class="sb">${esc(r[0])}</span></div>`).join("");
   const sumber=BSP.sumber==="diunggah"?"Diunggah manual":BSP.sumber==="server"?"Dari server (stok-bsp.json)":"Data bawaan";
-  return `<h2>Stok BSP · DOI</h2>
+  const note=npMode
+    ?(np?`${npList.length}${q?" dari "+np.rows.length:""} item non polos · stok <b>${f0(totNp)} ctn</b> · ${esc(np.file||"-")} · periode ${esc(np.periode||"-")} · tanpa DOI`:`Belum ada data stok non polos. Ikut terisi dari email atau unggahan file "update stok barang colour".`)
+    :`${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = rata-rata penjualan 3 bln, sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar`;
+  return `<h2>${npMode?"Stok BSP · Non polos":"Stok BSP · DOI"}</h2>
   <div class="card stack"><div><div class="lbl">Data stok</div><div style="font-weight:600;overflow-wrap:anywhere">${esc(BSP.file||"-")}</div>
     <div class="note">Periode ${esc(BSP.periode)} · gudang ${esc(BSP.gudang)} · ${esc(sumber)}${BSP.diperbarui?" · diperbarui "+esc(new Date(BSP.diperbarui).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))+" WITA":""}</div>
-    <div class="note">Penjualan: ${esc(BSP.itemFile||"-")}</div></div>
+    <div class="note">Penjualan: ${esc(BSP.itemFile||"-")}</div>
+    <div class="note">Non polos: ${BSP.nonPolos?esc(BSP.nonPolos.file||"-")+" · periode "+esc(BSP.nonPolos.periode||"-"):"belum ada file"}</div></div>
     <button class="btn" id="bspmuat" type="button">Muat ulang dari server</button>
-    <label class="btn ghost" for="bspf1" style="text-align:center;display:block">Upload file stok (.xls / .xlsx)</label><input type="file" id="bspf1" accept=".xls,.xlsx,.xlsb" hidden>
+    <label class="btn ghost" for="bspf1" style="text-align:center;display:block">Upload file stok polos (.xls / .xlsx)</label><input type="file" id="bspf1" accept=".xls,.xlsx,.xlsb" hidden>
     <label class="btn ghost" for="bspf2" style="text-align:center;display:block">Upload file item penjualan (.xlsx)</label><input type="file" id="bspf2" accept=".xls,.xlsx,.xlsb" hidden>
+    <label class="btn ghost" for="bspf3" style="text-align:center;display:block">Upload file stok non polos / colour (.xls)</label><input type="file" id="bspf3" accept=".xls,.xlsx,.xlsb" hidden>
     <div id="bspmsg" class="note">${esc(S.bspMsg||"")}</div>
     ${BSP.sumber==="diunggah"?`<button class="btn ghost" id="bspreset" type="button">Kembali ke data server / bawaan</button>`:""}
   </div>
-  <div class="card stack"><div class="bfs">${chips}</div><div class="bfs">${[["doi","Urut: DOI terendah"],["ap","Urut: AP3M tertinggi"]].map(([k,l])=>`<button type="button" class="bfb" data-bs="${k}" aria-pressed="${(S.bs||"doi")===k}">${l}</button>`).join("")}</div><input type="search" id="qs" value="${esc(S.qs||"")}" placeholder="Cari item, mis. jeruk peras / thai tea" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
-  <div class="note">${L.length} item polos · <b>${nCrit}</b> DOI &lt; 15 hari · <b>${nWarn}</b> DOI 15–29 hari · stok <b>${f0(tot)} ctn</b> · stok periode ${esc(BSP.periode)} · DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = rata-rata penjualan 3 bln, sisa di bawah ctn diabaikan · varian beda gramasi digabung ke renceng terbesar</div></div>
-  <div class="slims" style="margin-top:8px">${cards||'<div class="card empty">Tidak ada item yang cocok.</div>'}</div>
+  <div class="card stack"><div class="bfs">${chips}</div>${npMode?"":`<div class="bfs">${[["doi","Urut: DOI terendah"],["ap","Urut: AP3M tertinggi"]].map(([k,l])=>`<button type="button" class="bfb" data-bs="${k}" aria-pressed="${(S.bs||"doi")===k}">${l}</button>`).join("")}</div>`}<input type="search" id="qs" value="${esc(S.qs||"")}" placeholder="${npMode?"Cari barang non polos, mis. school / 800g":"Cari item, mis. jeruk peras / thai tea"}" autocomplete="off" style="width:100%;font:500 15px var(--f-body);background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;min-height:42px">
+  <div class="note">${note}</div></div>
+  <div class="slims" style="margin-top:8px">${cards||`<div class="card empty">${npMode?(np?"Tidak ada barang non polos yang cocok.":"Belum ada data stok non polos."):"Tidak ada item yang cocok."}</div>`}</div>
   ${bonusStok.length?`<div class="lbl" style="margin:20px 0 8px">Bonus di stok · kode NFI-X1 / NFI-X3 (tanpa DOI)</div><div class="slims">${bc}</div>`:""}
   ${other.length?`<div class="lbl" style="margin:20px 0 8px">Stok di luar daftar penjualan (tanpa DOI)</div><div class="slims">${oc}</div>`:""}
   <div style="height:24px"></div>`;
@@ -680,6 +687,11 @@ async function bspUpload(kind,f){
       nb.rows=st.rows;nb.periode=st.periode||nb.periode;nb.gudang=st.gudang||nb.gudang;nb.file=f.name;
       const m=StokBSP.mapItems(nb.items.map(i=>i.slice(0,7)),nb.rows,nb.items);nb.items=m.items;
       say("Stok "+f.name+" dimuat: "+st.rows.length+" baris, periode "+nb.periode+".");
+    }else if(kind==="np"){
+      const st=StokBSP.parseStok(XLSX,buf,"array");
+      if(!st.rows.length)throw new Error("tidak ada baris stok non polos");
+      nb.nonPolos={periode:st.periode||"",gudang:st.gudang||nb.gudang,file:f.name,rows:st.rows,diperbarui:new Date().toISOString()};
+      say("Stok non polos "+f.name+" dimuat: "+st.rows.length+" baris, periode "+(st.periode||"-")+".");
     }else{
       const it=StokBSP.parseItems(XLSX,buf,"array");
       if(!it.items.length)throw new Error("tidak ada item");
@@ -687,7 +699,7 @@ async function bspUpload(kind,f){
       nb.items=m.items;nb.bulan=it.bulan;nb.itemFile=f.name;
       say("Item penjualan "+f.name+" dimuat: "+it.items.length+" item"+(m.tanpaKode.length?" · "+m.tanpaKode.length+" item belum ada kode stok (DOI 0 / tanpa stok): "+m.tanpaKode.slice(0,3).join(", ")+(m.tanpaKode.length>3?" ...":""):"")+".");
     }
-    nb.sumber="diunggah";BSP=nb;const msg=S.bspMsg;refresh();S.bspMsg=msg;const el=$("#bspmsg");if(el)el.textContent=msg;
+    nb.sumber="diunggah";BSP=nb;if(kind==="np")S.bf="np";const msg=S.bspMsg;refresh();S.bspMsg=msg;const el=$("#bspmsg");if(el)el.textContent=msg;
   }catch(err){say("Gagal membaca file: "+(err&&err.message?err.message:err))}
 }
 async function bspPull(manual){
@@ -830,7 +842,7 @@ document.addEventListener("change",e=>{
   else if(id==="add"){S.add=Math.max(1,+e.target.value||30);refresh()}
   else if(id==="file"){loadFile(e.target.files[0])}
   else if(id==="shif1"||id==="shif2"){shiUpload(id==="shif1"?"stok":"item",e.target.files[0]);e.target.value=""}
-  else if(id==="bspf1"||id==="bspf2"){bspUpload(id==="bspf1"?"stok":"item",e.target.files[0]);e.target.value=""}
+  else if(id==="bspf1"||id==="bspf2"||id==="bspf3"){bspUpload(id==="bspf1"?"stok":id==="bspf2"?"item":"np",e.target.files[0]);e.target.value=""}
 });
 
 async function loadFile(f){
