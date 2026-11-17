@@ -713,7 +713,7 @@ async function bspPull(manual){
 bspPull(false);
 /* ===== Tab 7: Stok Sehat Indah (SHI). Stok dari sheet "STOK ..." file ekspor Sehat Indah yang diupload di aplikasi insentif (Fahri) -> insentifData/FahriStok.
    Stok per item = jumlah karton (CRT) di kolom stk_kms; sisa di bawah karton diabaikan. DOI = stok ctn ÷ (AP3M ÷ 30), AP3M = "Rata2 JUAL/bln" (retur tidak dikurangkan, qty retur sering tidak akurat). */
-const shiCtn=t=>{const m=/(-?\d+)\s*crt\b/i.exec(t||"");return m?+m[1]:0};
+const shiCtn=t=>{const m=/(-?\d{1,3}(?:[.,]\d{3})+|-?\d+)\s*crt\b/i.exec(t||"");return m?+m[1].replace(/[.,]/g,""):0};   // angka ribuan: "1,201CRT" = 1201 ctn (bukan 201)
 const shiFmt=t=>String(t||"").trim().replace(/(\d)\s*crt/ig,"$1 ctn").toLowerCase();
 const shiRow=k=>SHI.rows.find(r=>r.k===k);
 const shiStok=ks=>ks.reduce((s,k)=>{const r=shiRow(k);return s+(r?shiCtn(r.t):0)},0);
